@@ -11,3 +11,8 @@ To launch the demo simulator, move in the demo folder and execute:
 ```
 python demo.py
 ```
+
+Once the package has been installed, you can easily import in in any python script by doing for example:
+```
+from rover_multibody_simulator import four_ws_rover_dynamic_simulator as sim
+```
