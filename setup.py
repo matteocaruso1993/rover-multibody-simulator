@@ -8,6 +8,9 @@ Created on Fri Mar 26 22:45:22 2021
 from setuptools import setup
 from setuptools import find_packages
 
+
+
+
 setup(name='rover_multibody_simulator',
       version='1.0.0',
       description='This package allows implementing a multibody dynamic simulator for a rover',
