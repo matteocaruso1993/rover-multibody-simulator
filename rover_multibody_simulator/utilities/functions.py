@@ -89,4 +89,16 @@ def findContinguousContactRegions(input_array):
         groups.append(tmp)
     
     return groups
+
+
+
+def generateWheelsPoints(R,theta):
+    
+    points = np.zeros((theta.shape[0],3))
+    
+    z = R*np.cos(theta)
+    y = R*np.sin(theta)
+    points[:,-1] = z
+    points[:,1] = y
+    return points
         

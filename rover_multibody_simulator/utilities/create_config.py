@@ -13,42 +13,100 @@ config = configparser.ConfigParser()
 
 config.add_section('Model Description')
 
-config['Model Description']['rover_mass'] = '1'
-config['Model Description']['rover_inertia_xx'] = '0.0075'
-config['Model Description']['rover_inertia_yy'] = '0.0075'
-config['Model Description']['rover_inertia_zz'] = '0.0075'
 
-config['Model Description']['arm_offset'] = '0.3'
-config['Model Description']['arm_cm_distance'] = '0.02'
-config['Model Description']['link_lenght'] = '0.2'
-config['Model Description']['hinge1_len'] = str(0.2*math.cos(math.radians(20)))
-config['Model Description']['hinge1_height'] = str(0.2*math.sin(math.radians(20)))
-config['Model Description']['swing_arm_mass'] = '0.1'
-config['Model Description']['swing_arm_inertia_xx'] = '0.0005'
-config['Model Description']['swing_arm_inertia_yy'] = '0.0005'
-config['Model Description']['swing_arm_inertia_zz'] = '0.0005'
-config['Model Description']['swing_arm_inertia_xy'] = '0'
-config['Model Description']['swing_arm_inertia_xz'] = '0'
-config['Model Description']['swing_arm_inertia_yz'] = '0'
-config['Model Description']['link_cm_dist'] = '0.1'
-config['Model Description']['link_mass'] = '0.02'
-config['Model Description']['link_inertia_xx'] = '0.00025'
-config['Model Description']['link_inertia_yy'] = '0.00025'
-config['Model Description']['link_inertia_zz'] = '0.00025'
-config['Model Description']['wheel_offset'] = '0.1'
-config['Model Description']['wheel_mass'] = '0.05'
-config['Model Description']['wheel_inertia_xx'] = '0.0075'
-config['Model Description']['wheel_inertia_yy'] = '0.0075'
-config['Model Description']['wheel_inertia_zz'] = '0.0075'
-config['Model Description']['wheel_radius'] = '.1'
+kg_mm2kg_m = 1e-6
 
-config['Model Description']['simplified'] = 'True'
+
+
+#ROVER BODY PROPERTIES
+config['Model Description']['rover_mass'] = '0.92'
+config['Model Description']['rover_inertia_xx'] = str(56118.91*kg_mm2kg_m)
+config['Model Description']['rover_inertia_yy'] = str(4372.79*kg_mm2kg_m)
+config['Model Description']['rover_inertia_zz'] = str(8383.09*kg_mm2kg_m)
+config['Model Description']['rover_inertia_xy'] = '0' # TO CHECK!
+config['Model Description']['rover_inertia_xz'] = '0' # TO CHECK!
+config['Model Description']['rover_inertia_yz'] = '0' # TO CHECK!
+
+
+
+
+
+
+
+#BOGIE BODY PROPERTIES
+config['Model Description']['arm_offset_x'] = '0.1328161' #TO CHECK!
+config['Model Description']['arm_offset_y'] = '0.0' #TO CHECK! # 0 per semplicità
+config['Model Description']['arm_offset_z'] = '0.0' #TO CHECK! #20mm forse, 15.5080mm
+config['Model Description']['arm_cm_distance'] = '-0.004087'
+config['Model Description']['link_lenght'] = '0.1091876'   #TO CHECK!
+config['Model Description']['link_angle'] = str(math.radians(14.44))
+config['Model Description']['hinge1_len'] = str(float(config['Model Description']['link_lenght'])\
+                                                *math.cos(float(config['Model Description']['link_angle']))) #TO CHECK!
+config['Model Description']['hinge1_height'] = str(float(config['Model Description']['link_lenght'])\
+                                                *math.sin(float(config['Model Description']['link_angle']))) #TO CHECK!
+config['Model Description']['swing_arm_mass'] = '0.168615'
+config['Model Description']['swing_arm_inertia_xx'] = str(92.454*kg_mm2kg_m)
+config['Model Description']['swing_arm_inertia_yy'] = str(740.29055*kg_mm2kg_m)
+config['Model Description']['swing_arm_inertia_zz'] = str(690.80801*kg_mm2kg_m)
+config['Model Description']['swing_arm_inertia_xy'] = str(0.20764*kg_mm2kg_m)
+config['Model Description']['swing_arm_inertia_xz'] = str(0)
+config['Model Description']['swing_arm_inertia_yz'] = str(1.10413*kg_mm2kg_m)
+
+
+#CENTRAL LINK PROPERTIES
+config['Model Description']['central_link_cm_dist_x'] = '0.0'
+config['Model Description']['central_link_cm_dist_y'] = '0.048808'
+config['Model Description']['central_link_cm_dist_z'] = '0.009641'
+config['Model Description']['central_link_lenght'] = '0.09139'
+config['Model Description']['central_link_mass'] = '0.0766'
+config['Model Description']['central_link_inertia_xx'] = str(39.7567*kg_mm2kg_m)
+config['Model Description']['central_link_inertia_yy'] = str(83.8321*kg_mm2kg_m)
+config['Model Description']['central_link_inertia_zz'] = str(58.4776*kg_mm2kg_m)
+config['Model Description']['central_link_inertia_xy'] = str(2.49E-02*kg_mm2kg_m)
+config['Model Description']['central_link_inertia_xz'] = str(-3.729*kg_mm2kg_m)
+config['Model Description']['central_link_inertia_yz'] = str(-3.11E-02*kg_mm2kg_m)
+
+
+#TERMINAL LINK PROPERTIES
+config['Model Description']['terminal_link_cm_dist_x'] = '0.06471'
+config['Model Description']['terminal_link_cm_dist_y'] = '0.1413'
+config['Model Description']['terminal_link_cm_dist_z'] = '-0.01137'
+config['Model Description']['terminal_link_lenght'] = '0.16639'
+config['Model Description']['terminal_link_mass'] = '0.38157'
+config['Model Description']['terminal_link_inertia_xx'] = str(39.7567*kg_mm2kg_m)
+config['Model Description']['terminal_link_inertia_yy'] = str(83.8321*kg_mm2kg_m)
+config['Model Description']['terminal_link_inertia_zz'] = str(58.4776*kg_mm2kg_m)
+config['Model Description']['terminal_link_inertia_xy'] = str(2.49E-02*kg_mm2kg_m)
+config['Model Description']['terminal_link_inertia_xz'] = str(-3.729*kg_mm2kg_m)
+config['Model Description']['terminal_link_inertia_yz'] = str(-3.11E-02*kg_mm2kg_m)
+
+
+#config['Model Description']['link_cm_dist'] = '0.1'
+#config['Model Description']['link_mass'] = '0.02'
+#config['Model Description']['link_inertia_xx'] = '0.00025'
+#config['Model Description']['link_inertia_yy'] = '0.00025'
+#config['Model Description']['link_inertia_zz'] = '0.00025'
+
+
+
+#WHEEL BODY PROPERTIES
+config['Model Description']['wheel_offset_x'] = '0.10577'
+config['Model Description']['wheel_offset_y'] = '0.16639'
+config['Model Description']['wheel_offset_z'] = '-0.02713'
+config['Model Description']['wheel_mass'] = '0.2242'
+config['Model Description']['wheel_inertia_xx'] = str(1108.7749*kg_mm2kg_m)
+config['Model Description']['wheel_inertia_yy'] = str(675.2718*kg_mm2kg_m)
+config['Model Description']['wheel_inertia_zz'] = str(675.2718*kg_mm2kg_m)
+config['Model Description']['wheel_radius'] = '.085'
+
+config['Model Description']['simplified'] = 'False'
 config['Model Description']['debugging'] = 'False'
 config['Model Description']['action-reaction'] = 'True'
 config['Model Description']['initial symbols substitution'] = 'True'
+config['Model Description']['wheel-torque-control-debug'] = 'True'
 
 
-
+#TORSIONAL SPRINGS PROPERTIES
 config.add_section('Springs Definition')
 config['Springs Definition']['k_fr1'] = '10.5'
 config['Springs Definition']['M0_fr1'] = '1'
@@ -102,8 +160,8 @@ config['Springs Definition']['c_bl2'] = '5e-3'
 
 
 config.add_section('Ground Properties')
-config['Ground Properties']['stiffness'] = '10000'
-config['Ground Properties']['damping'] = '10'
+config['Ground Properties']['stiffness'] = '1000000' #10000
+config['Ground Properties']['damping'] = '100'
 config['Ground Properties']['exp'] = '1.5'
 config['Ground Properties']['max depth'] = '1e-4'
 
@@ -124,7 +182,7 @@ config['Plotting']['animation fps'] = '30'
 config.add_section('Simulator')
 config['Simulator']['simulation_time'] = '5'
 config['Simulator']['eom_method'] = 'Kane'
-config['Simulator']['integrator'] = 'ipv - RK45'#'odeint'    #[odeint, ipv - RK45, ipv - Adams, 'Euler-Explicit']
+config['Simulator']['integrator'] = 'ipv - RK23' #'ipv - Radau'#'odeint'    #[odeint, ipv - RK45, ipv - Adams, 'Euler-Explicit']
 config['Simulator']['step size'] = '1e-5'
 
 #Used only for odeint
@@ -135,12 +193,36 @@ config['Simulator']['lambdifier'] = 'lambdify' #options = ['lambdify', theano, a
 config['Simulator']['autowrap save files'] = 'True'
 config['Simulator']['autowrap save dir'] = 'data/wrappers'
 
+config.add_section('Friction Properties')
+config['Friction Properties']['load_model'] = 'True'
+config['Friction Properties']['g1'] = '2.0430'
+config['Friction Properties']['g2'] = '239.1462'
+config['Friction Properties']['g3'] = '120.0534'
+config['Friction Properties']['g4'] = '0.5'
+config['Friction Properties']['g5'] = '84.4111'
+config['Friction Properties']['g6'] = '0'
+
+config.add_section('Wheel-Steer-Controller')
+config['Wheel-Steer-Controller']['K1'] = '10'
+config['Wheel-Steer-Controller']['K2'] = '10'
+config['Wheel-Steer-Controller']['K3'] = '10'
+config['Wheel-Steer-Controller']['K4'] = '10'
+
+
+
+config.add_section('Wheel-Drive-Controller')
+config['Wheel-Drive-Controller']['K1'] = '10'
+config['Wheel-Drive-Controller']['K2'] = '10'
+config['Wheel-Drive-Controller']['K3'] = '10'
+config['Wheel-Drive-Controller']['K4'] = '10'
+
+
 
 file_path = os.path.dirname(__file__)
 parent_folder = os.path.abspath(os.path.join(file_path,'..'))
    
 if not os.path.isdir(os.path.join(parent_folder,'data','config')):
-    os.mkdir(os.path.join(parent_folder,'data','config'))
+    os.makedirs(os.path.join(parent_folder,'data','config'))
     
     
 with open(os.path.join(parent_folder, 'data','config','config.ini'), 'w') as configfile:
