@@ -101,4 +101,13 @@ def generateWheelsPoints(R,theta):
     points[:,-1] = z
     points[:,1] = y
     return points
+
+def clip(v, min_v, max_v):
+    if v > max_v:
+        v = max_v
+    elif v < min_v:
+        v = min_v
+    else:
+        pass
+    return v
         
