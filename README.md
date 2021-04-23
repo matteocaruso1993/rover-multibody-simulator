@@ -21,14 +21,14 @@ If you want to use compiled code you need to install Microsoft C++ Build Tools. 
 
 Once installed the required build tools, locate in the demo folder and execute:
 
-``
+```
 python compiler.py
-``
+```
 
 The code will generate some compiled C code in the folder demo/data/wrappers/full-model. Once it is done you can symply run the demo_fully_parametric script:
 
-``
+```
 python demo_fully_parametric.py
-``
+```
 
 or you can use it as starting point and edit it for your needs.
