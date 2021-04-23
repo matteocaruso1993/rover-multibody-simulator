@@ -16,3 +16,5 @@ Once the package has been installed, you can easily import in in any python scri
 ```
 from rover_multibody_simulator import four_ws_rover_dynamic_simulator as sim
 ```
+
+If you want to use compiled code you need to install Microsoft C++ Build Tools. You can download it at https://visualstudio.microsoft.com/it/visual-cpp-build-tools/
