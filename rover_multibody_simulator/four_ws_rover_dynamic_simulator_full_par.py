@@ -28,8 +28,10 @@ from tqdm import tqdm
 import configparser
 import os
 import dill
+import cloudpickle
+import importlib
 import json
-
+import math
 
 
 from .utilities.functions import step5, generateWheelsPoints, findContinguousContactRegions
@@ -121,6 +123,8 @@ class RoverSimulator:
         
         self.__map = dict()
         
+        self._map_parameters = dict()
+        
         self.__wheel_points = None
         
         self.ground_new = None
@@ -178,43 +182,68 @@ class RoverSimulator:
         rover_intermediate_frame = ReferenceFrame('R_{int}') #Intermediate reference frame
         rover_frame = ReferenceFrame('R') #Rover final frame
         
+        param_symbols = list()
+        
         
         #%% Constant Symbols definition
         rover_mass = symbols('m_R') #OK
+        rover_inertia_x,rover_inertia_y,rover_inertia_z, rover_inertia_xy, rover_inertia_xz, rover_inertia_yz = symbols('I_{R_{xx}}, I_{R_{yy}}, I_{R_{zz}}, I_{R_{xy}}, I_{R_{xz}}, I_{R_{yz}}')
+        
+        param_symbols += [rover_mass, rover_inertia_x,rover_inertia_y,rover_inertia_z, rover_inertia_xy, rover_inertia_xz, rover_inertia_yz]
+        
         d_h_x, d_h_y, d_h_z = symbols('d_h_x, d_h_y, d_h_z') #OK
         off_swing_dst, l_hinge_1, h_hinge_1 = symbols('d_{SA_{CM}}, l_{h_1},h_{h_1}') #OK
         mass_swing_arm = symbols('m_{SA}') #OK
         swing_arm_i_xx, swing_arm_i_yy, swing_arm_i_zz, swing_arm_i_xy, swing_arm_i_xz,swing_arm_i_yz = symbols('I_{SA_{xx}}, I_{SA_{yy}}, I_{SA_{zz}}, I_{SA_{xy}}, I_{SA_{xz}}, I_{SA_{yz}}') #OK
         
+        param_symbols += [d_h_x, d_h_y, d_h_z, off_swing_dst, l_hinge_1, h_hinge_1, mass_swing_arm, swing_arm_i_xx, swing_arm_i_yy, swing_arm_i_zz, swing_arm_i_xy, swing_arm_i_xz,swing_arm_i_yz]
+        
+        
         d_CM_central_link_x, d_CM_central_link_y, d_CM_central_link_z = symbols('dx_{LC_{CM}}, dy_{LC_{CM}}, dz_{LC_{CM}}')
         central_link_lenght = symbols('l_{CL}')
         
+        param_symbols += [d_CM_central_link_x, d_CM_central_link_y, d_CM_central_link_z, central_link_lenght]
        
-        
         #d_CM_link = d_CM_link.subs({d_CM_link: l_link/2}) #Assumed centre mass in middle of the link
         mass_central_link, central_link_inertia_xx, central_link_inertia_yy, central_link_inertia_zz, central_link_inertia_xy, central_link_inertia_xz, central_link_inertia_yz = \
             symbols('m_CL, I_{CL_{xx}}, I_{CL_{yy}}, I_{CL_{zz}}, I_{CL_{xy}}, I_{CL_{xz}}, I_{CL_{yz}}') #OK
             
-            
+        param_symbols += [mass_central_link, central_link_inertia_xx, central_link_inertia_yy, central_link_inertia_zz, central_link_inertia_xy, central_link_inertia_xz, central_link_inertia_yz ]
             
         d_CM_terminal_link_x, d_CM_terminal_link_y, d_CM_terminal_link_z = symbols('dx_{LT_{CM}}, dy_{LT_{CM}}, dz_{LT_{CM}}')
         terminal_link_lenght = symbols('l_{TL}')
         
+        param_symbols += [d_CM_terminal_link_x, d_CM_terminal_link_y, d_CM_terminal_link_z, terminal_link_lenght]
+        
         mass_terminal_link, terminal_link_inertia_xx, terminal_link_inertia_yy, terminal_link_inertia_zz, terminal_link_inertia_xy, terminal_link_inertia_xz, terminal_link_inertia_yz = \
             symbols('m_TL, I_{TL_{xx}}, I_{TL_{yy}}, I_{TL_{zz}}, I_{TL_{xy}}, I_{TL_{xz}}, I_{TL_{yz}}')
         
+        param_symbols += [mass_terminal_link, terminal_link_inertia_xx, terminal_link_inertia_yy, terminal_link_inertia_zz, terminal_link_inertia_xy, terminal_link_inertia_xz, terminal_link_inertia_yz]
         
         # Wheel parameters symbols
         wheel_offset_x, wheel_offset_y, wheel_offset_z = symbols('d_Wx, d_Wy, d_Wz')
         wheel_mass, wheel_inertia_xx,wheel_inertia_yy, wheel_inertia_zz = symbols('m_W, I_{W_{xx}}, I_{W_{yy}}, I_{W_{zz}}')
-        rover_inertia_x,rover_inertia_y,rover_inertia_z = symbols('I_{R_{xx}}, I_{R_{yy}}, I_{R_{zz}}')
+        
         wheel_radius = symbols('w_R')
+        
+        param_symbols += [wheel_offset_x, wheel_offset_y, wheel_offset_z, wheel_mass, wheel_inertia_xx,wheel_inertia_yy, wheel_inertia_zz, wheel_radius]
         
         E_fr1, E_br1, E_fl1, E_bl1, E_fr2, E_br2, E_fl2, E_bl2 = symbols('E_{fr1}, E_{br1}, E_{fl1}, E_{bl1}, E_{fr2}, E_{br2}, E_{fl2}, E_{bl2}')
         k_fr1, k_br1, k_fl1, k_bl1, k_fr2, k_br2, k_fl2, k_bl2 = symbols('k_{fr1}, k_{br1}, k_{fl1}, k_{bl1}, k_{fr2}, k_{br2}, k_{fl2}, k_{bl2}')
         M0_fr1, M0_br1, M0_fl1, M0_bl1, M0_fr2, M0_br2, M0_fl2, M0_bl2 = symbols('M0_{fr1}, M0_{br1}, M0_{fl1}, M0_{bl1}, M0_{fr2}, M0_{br2}, M0_{fl2}, M0_{bl2}')
         f_fr1, f_br1, f_fl1, f_bl1, f_fr2, f_br2, f_fl2, f_bl2 = symbols('f_{fr1}, f_{br1}, f_{fl1}, f_{bl1}, f_{fr2}, f_{br2}, f_{fl2}, f_{bl2}')
         c_fr1, c_br1, c_fl1, c_bl1, c_fr2, c_br2, c_fl2, c_bl2 = symbols('c_{fr1}, c_{br1}, c_{fl1}, c_{bl1}, c_{fr2}, c_{br2}, c_{fl2}, c_{bl2}')
+        
+        
+        param_symbols += [E_fr1, E_br1, E_fl1, E_bl1, E_fr2, E_br2, E_fl2, E_bl2]
+        param_symbols += [k_fr1, k_br1, k_fl1, k_bl1, k_fr2, k_br2, k_fl2, k_bl2]
+        param_symbols += [M0_fr1, M0_br1, M0_fl1, M0_bl1, M0_fr2, M0_br2, M0_fl2, M0_bl2]
+        param_symbols += [f_fr1, f_br1, f_fl1, f_bl1, f_fr2, f_br2, f_fl2, f_bl2]
+        param_symbols += [c_fr1, c_br1, c_fl1, c_bl1, c_fr2, c_br2, c_fl2, c_bl2]
+        
+        self._map_parameters['symbols'] = param_symbols
+        
+        self._createParamMapping()
         
         
         def springTorqueExpression(sim_var, k, M, E, f):
@@ -224,9 +253,9 @@ class RoverSimulator:
         
         
         
+        self._symbols_substituted = True
         
-        
-        if self.__config_found:
+        if self.__config_found and self.config.getboolean('Model Description','initial symbols substitution'):
             
             #Load rover body properties
             
@@ -347,8 +376,11 @@ class RoverSimulator:
             c_bl2 = self.config.getfloat('Springs Definition','c_bl2')
             
             
+            self._symbols_substituted = True
+            
+            
 
-            self.setMethod(self.config['Simulator']['eom_method'])
+        self.setMethod(self.config['Simulator']['eom_method'])
             
 #%% Dynamics symbols definition
         theta, psi = dynamicsymbols('theta, psi') #First two rotation of the rover
@@ -453,7 +485,7 @@ class RoverSimulator:
             self.gen_speeds = [x_d,y_d,theta_d, chi_d,psi_d,phi_d,alpha_1_d,alpha_2_d, delta_1_d, omega_1_d,beta_1_d,beta_2_d, delta_2_d, omega_2_d,
                   gamma_1_d,gamma_2_d, delta_3_d, omega_3_d,eps_1_d,eps_2_d, delta_4_d, omega_4_d]
             
-                  
+        self.eq_const = list()          
         for i in range(len(self.gen_speeds)):
             self.gen_coord[i].__class__.__module__ = '__main__'
             self.gen_speeds[i].__class__.__module__ = '__main__'
@@ -1321,7 +1353,7 @@ class RoverSimulator:
 #TO DO
 
 
-    def lambdifyAll(self, method = None):
+    def lambdifyAll(self, method = None, ):
         """
         This method attempts on creating lamda functions for:
             - Frames orientation (input arguments q) 
@@ -1353,48 +1385,54 @@ class RoverSimulator:
         save_dir = None
         if self.config.getboolean('Simulator','autowrap save files'):
             save_dir = self.config.get('Simulator','autowrap save dir')
+            save_dir_tmp = save_dir.split('/')
 
         self.__createVariablesMapping()
         
         cwd = os.getcwd()
         
         if not os.path.isdir(os.path.join(cwd,'data', 'wrappers')):
-            os.makedirs(os.path.join(cwd,'data', 'wrappers'))
+            os.makedirs(os.path.join(cwd,*save_dir_tmp))
+            with open(os.path.join(cwd, 'data', 'wrappers','__init__.py'),'w') as f:
+                pass
+            f.close()
         
         
-        
+        par = self._map_parameters['dummy-to-sub']
         
         acc_list = [diff(vel) for vel in self.gen_speeds]
         
         
         for i in tqdm(range(len(self.frames)), desc='Lambdifying reference frames tranformation matrices'):
             if method == 'lambdify':
-                f = lambdify(self.gen_coord,self.frames[i].dcm(self.frames[0]), "numpy")
+                f = lambdify(self.gen_coord +par,self.frames[i].dcm(self.frames[0]), "numpy")
             elif method == 'theano':
-                f = theano_function(self.gen_coord, [self.frames[i].dcm(self.frames[0])], on_unused_input='ignore')
+                f = theano_function(self.gen_coord+par, [self.frames[i].dcm(self.frames[0])], on_unused_input='ignore')
             elif method == 'autowrap - f2py':
                 f = autowrap(msubs(self.frames[i].dcm(self.frames[0]), self.__map['simplyfied']['mapping']['gen-coords'])\
-                             ,tempdir=save_dir, args=self.__map['simplyfied']['subs gen-coords'], backend = 'f2py')
+                             ,tempdir=save_dir, args=self.__map['simplyfied']['subs gen-coords']+par, backend = 'f2py')
             else:
-                f = autowrap(msubs(self.frames[i].dcm(self.frames[0]), self.__map['dummyfied']['mapping']['gen-coords'])\
-                             ,tempdir=save_dir, args=self.__map['dummyfied']['subs gen-coords'], backend = 'cython')
+                t = {**self.__map['dummyfied']['mapping']['gen-coords'], **self._map_parameters['dummy-mapping']}
+                #print(t)
+                f = autowrap(msubs(self.frames[i].dcm(self.frames[0]), t)\
+                             ,tempdir=save_dir, args=self.__map['dummyfied']['subs gen-coords']+par, backend = 'cython')
             self.lambdified_frames.append(f)
             
             
         tmp_coords = self.gen_coord + self.gen_speeds
         for i in tqdm(range(len(self.frames)), desc='Lambdifying reference frames angular velocities'):
             if method == 'lambdify':
-                f = lambdify(tmp_coords, self.frames[i].ang_vel_in(self.frames[0]).to_matrix(self.frames[0]), "numpy")
+                f = lambdify(tmp_coords+par, self.frames[i].ang_vel_in(self.frames[0]).to_matrix(self.frames[0]), "numpy")
             elif method == 'theano':
-                f = theano_function(tmp_coords, [self.frames[i].ang_vel_in(self.frames[0]).to_matrix(self.frames[0])], on_unused_input='ignore')
+                f = theano_function(tmp_coords+par, [self.frames[i].ang_vel_in(self.frames[0]).to_matrix(self.frames[0])], on_unused_input='ignore')
             elif method == 'autowrap - f2py':
                 expr = self.frames[i].ang_vel_in(self.frames[0]).to_matrix(self.frames[0])
                 f = autowrap(msubs(expr, self.__map['simplyfied']['mapping']['gen-merged']), \
-                             tempdir=save_dir, args=self.__map['simplyfied']['subs merged'], backend = 'f2py')
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs merged']+par, backend = 'f2py')
             else:
                 expr = self.frames[i].ang_vel_in(self.frames[0]).to_matrix(self.frames[0])
-                f = autowrap(msubs(expr, self.__map['dummyfied']['mapping']['gen-merged']), \
-                             tempdir=save_dir, args=self.__map['dummyfied']['subs merged'], backend = 'cython')
+                f = autowrap(msubs(expr, {**self.__map['dummyfied']['mapping']['gen-merged'], **self._map_parameters['dummy-mapping']}), \
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs merged']+par, backend = 'cython')
     
             self.lambdified_frames_ang_vel.append(f)
         
@@ -1411,17 +1449,17 @@ class RoverSimulator:
         for i in tqdm(range(len(self.points)), desc='Lambdifying points positions'):
             
             if method == 'lambdify':
-                f = lambdify(self.gen_coord, self.points[i].pos_from(self.points[0]).to_matrix(self.frames[0]).T, "numpy")
+                f = lambdify(self.gen_coord+par, self.points[i].pos_from(self.points[0]).to_matrix(self.frames[0]).T, "numpy")
             elif method == 'theano':
-                f = theano_function(self.gen_coord, [self.points[i].pos_from(self.points[0]).to_matrix(self.frames[0]).T], on_unused_input='ignore')
+                f = theano_function(self.gen_coord+par, [self.points[i].pos_from(self.points[0]).to_matrix(self.frames[0]).T], on_unused_input='ignore')
             elif method == 'autowrap - f2py':
                 expr = self.points[i].pos_from(self.points[0]).to_matrix(self.frames[0]).T
                 f = autowrap(msubs(expr, self.__map['simplyfied']['mapping']['gen-coords']),\
-                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-coords'], backend = 'f2py')
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-coords']+par, backend = 'f2py')
             else:
                 expr = self.points[i].pos_from(self.points[0]).to_matrix(self.frames[0]).T
-                f = autowrap(msubs(expr, self.__map['dummyfied']['mapping']['gen-coords']),\
-                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-coords'], backend = 'cython')
+                f = autowrap(msubs(expr, {**self.__map['dummyfied']['mapping']['gen-coords'], **self._map_parameters['dummy-mapping']}),\
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-coords']+par, backend = 'cython')
             self.lambdified_points.append(f)
             
         
@@ -1429,15 +1467,15 @@ class RoverSimulator:
         for i in tqdm(range(len(self.points)), desc='Lambdifying points linear velocities'):
             expr = self.points[i].vel(self.frames[0]).to_matrix(self.frames[0]).T
             if method == 'lambdify':
-                f = lambdify(tmp_coords, expr, "numpy")
+                f = lambdify(tmp_coords+par, expr, "numpy")
             elif method == 'theano':
-                f = theano_function(tmp_coords, [expr], on_unused_input='ignore')
+                f = theano_function(tmp_coords+par, [expr], on_unused_input='ignore')
             elif method == 'autowrap - f2py':
                 f = autowrap(msubs(expr, self.__map['simplyfied']['mapping']['gen-merged']), \
-                             tempdir=save_dir, args=self.__map['simplyfied']['subs merged'], backend = 'f2py')
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs merged']+par, backend = 'f2py')
             else:
-                f = autowrap(msubs(expr, self.__map['dummyfied']['mapping']['gen-merged']), \
-                             tempdir=save_dir, args=self.__map['dummyfied']['subs merged'], backend = 'cython')
+                f = autowrap(msubs(expr, {**self.__map['dummyfied']['mapping']['gen-merged'], **self._map_parameters['dummy-mapping']}), \
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs merged']+par, backend = 'cython')
             
             self.lambdified_points_vel.append(f)
             
@@ -1477,15 +1515,15 @@ class RoverSimulator:
             
             
             if method == 'lambdify':
-                f_n = lambdify(self.gen_coord, tmp_matrix, "numpy")
+                f_n = lambdify(self.gen_coord+par, tmp_matrix, "numpy")
             elif method == 'theano':
-                f_n = theano_function(self.gen_coord, [tmp_matrix], on_unused_input='ignore')
+                f_n = theano_function(self.gen_coord+par, [tmp_matrix], on_unused_input='ignore')
             elif method == 'autowrap - f2py':
                 f_n = autowrap(msubs(tmp_matrix, self.__map['simplyfied']['mapping']['gen-coords']),\
-                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-coords'], backend = 'f2py')
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-coords']+par, backend = 'f2py')
             else:
-                f_n = autowrap(msubs(tmp_matrix, self.__map['dummyfied']['mapping']['gen-coords']),\
-                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-coords'], backend = 'cython')
+                f_n = autowrap(msubs(tmp_matrix, {**self.__map['dummyfied']['mapping']['gen-coords'], **self._map_parameters['dummy-mapping']}),\
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-coords']+par, backend = 'cython')
             func_list.append(f_n)
             func_list_pos.append(tmp_pos)
             func_list_vel.append(tmp_vel)
@@ -1529,44 +1567,44 @@ class RoverSimulator:
             symb = list(self.contact_parametric['variables'][n])
             
             if method == 'lambdify':
-                f_p = lambdify(self.gen_coord + symb, expr_pos, "numpy")
-                f_part = lambdify(self.gen_coord + symb, part_vel_expr, "numpy")
+                f_p = lambdify(self.gen_coord + par + symb, expr_pos, "numpy")
+                f_part = lambdify(self.gen_coord +par+ symb, part_vel_expr, "numpy")
                 tmp_coord = self.gen_coord + self.gen_speeds
                 
-                f_v = lambdify(tmp_coord + symb, expr_vel, "numpy")
-                f_v_proj = lambdify(tmp_coord + symb, expr_proj_vel, "numpy")
+                f_v = lambdify(tmp_coord +par + symb, expr_vel, "numpy")
+                f_v_proj = lambdify(tmp_coord +par+ symb, expr_proj_vel, "numpy")
             elif method == 'theano':
-                f_p = theano_function(self.gen_coord + symb, [expr_pos], on_unused_input='ignore')
-                f_part = theano_function(self.gen_coord+ symb, [part_vel_expr], on_unused_input='ignore')
+                f_p = theano_function(self.gen_coord +par+ symb, [expr_pos], on_unused_input='ignore')
+                f_part = theano_function(self.gen_coord+par+ symb, [part_vel_expr], on_unused_input='ignore')
                 tmp_coord = self.gen_coord + self.gen_speeds
                 
-                f_v = theano_function(tmp_coord + symb, [expr_vel], on_unused_input='ignore')
-                f_v_proj = theano_function(tmp_coord + symb, [expr_proj_vel], on_unused_input='ignore')
+                f_v = theano_function(tmp_coord+par + symb, [expr_vel], on_unused_input='ignore')
+                f_v_proj = theano_function(tmp_coord+par + symb, [expr_proj_vel], on_unused_input='ignore')
             elif method == 'autowrap - f2py':
                 f_p = autowrap(msubs(expr_pos, self.__map['simplyfied']['mapping']['gen-coords']),\
-                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-coords'] +symb, backend = 'f2py')
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-coords']+par +symb, backend = 'f2py')
                     
                 f_part = autowrap(msubs(part_vel_expr, self.__map['simplyfied']['mapping']['gen-coords']),\
-                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-coords'] +symb, backend = 'f2py')
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-coords']+par +symb, backend = 'f2py')
                     
                 f_v = autowrap(msubs(expr_vel, self.__map['simplyfied']['mapping']['gen-merged']),\
-                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-merged'] +symb, backend = 'f2py')
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs merged']+par +symb, backend = 'f2py')
                     
                 f_v_proj = autowrap(msubs(expr_proj_vel, self.__map['simplyfied']['mapping']['gen-merged']),\
-                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-merged'] +symb, backend = 'f2py')
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs merged']+par +symb, backend = 'f2py')
                     
             else:
-                f_p = autowrap(msubs(expr_pos, self.__map['dummyfied']['mapping']['gen-coords']),\
-                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-coords']+symb, backend = 'cython')
+                f_p = autowrap(msubs(expr_pos, {**self.__map['dummyfied']['mapping']['gen-coords'], **self._map_parameters['dummy-mapping']}),\
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-coords']+par+symb, backend = 'cython')
                     
-                f_part = autowrap(msubs(part_vel_expr, self.__map['dummyfied']['mapping']['gen-coords']),\
-                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-coords']+symb, backend = 'cython')
+                f_part = autowrap(msubs(part_vel_expr, {**self.__map['dummyfied']['mapping']['gen-coords'],**self._map_parameters['dummy-mapping']}),\
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-coords']+par+symb, backend = 'cython')
                     
-                f_v = autowrap(msubs(expr_vel, self.__map['dummyfied']['mapping']['gen-merged']),\
-                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-merged']+symb, backend = 'cython')
+                f_v = autowrap(msubs(expr_vel, {**self.__map['dummyfied']['mapping']['gen-merged'], **self._map_parameters['dummy-mapping']}),\
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs merged']+par+symb, backend = 'cython')
                     
-                f_v_proj = autowrap(msubs(expr_proj_vel, self.__map['dummyfied']['mapping']['gen-merged']),\
-                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-merged']+symb, backend = 'cython')
+                f_v_proj = autowrap(msubs(expr_proj_vel, {**self.__map['dummyfied']['mapping']['gen-merged'], **self._map_parameters['dummy-mapping']}),\
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs merged']+par+symb, backend = 'cython')
             
             
             
@@ -1594,6 +1632,9 @@ class RoverSimulator:
         None.
 
         """
+        
+        
+        par = self._map_parameters['dummy-to-sub']
         
         if method is not None:
             if method != 'autowrap - f2py' and method != 'autowrap - cython' and method != 'lambdify' and method != 'theano':
@@ -1677,19 +1718,19 @@ class RoverSimulator:
             
             if method == 'lambdify':
                 print('lambda')
-                self.kane_method['lambda func']['mass matrix full'] = lambdify(tmp_coord, \
+                self.kane_method['lambda func']['mass matrix full'] = lambdify(tmp_coord+par, \
                                                                       expr, "numpy")
             elif method == 'theano':
                 print('theano')
-                self.kane_method['lambda func']['mass matrix full'] = theano_function(tmp_coord, [expr])
+                self.kane_method['lambda func']['mass matrix full'] = theano_function(tmp_coord+par, [expr])
             elif method == 'autowrap - f2py':
                 print('fortran')
                 self.kane_method['lambda func']['mass matrix full'] = autowrap(msubs(expr, self.__map['simplyfied']['mapping']['gen-coords']),\
-                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-coords'], backend = 'f2py')
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-coords']+par, backend = 'f2py')
             else:
                 print('cython')
-                self.kane_method['lambda func']['mass matrix full'] = autowrap(msubs(expr, self.__map['dummyfied']['mapping']['gen-coords']),\
-                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-coords'], backend = 'cython')
+                self.kane_method['lambda func']['mass matrix full'] = autowrap(msubs(expr, {**self.__map['dummyfied']['mapping']['gen-coords'],**self._map_parameters['dummy-mapping']}),\
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-coords']+par, backend = 'cython')
                         
                 
             #self.kane_method['lambda func']['forcing vector'] = lambdify(self.gen_coord + self.gen_speeds, \
@@ -1700,19 +1741,19 @@ class RoverSimulator:
             
             if method == 'lambdify':
                 print('lambda')
-                self.kane_method['lambda func']['forcing vector full'] = lambdify(tmp_coord + self.__driving_torques, \
+                self.kane_method['lambda func']['forcing vector full'] = lambdify(tmp_coord+par + self.__driving_torques, \
                                                                       expr, "numpy")
             elif method == 'theano':
                 print('theano')
-                self.kane_method['lambda func']['forcing vector full'] = theano_function(tmp_coord + self.__driving_torques, [expr])
+                self.kane_method['lambda func']['forcing vector full'] = theano_function(tmp_coord+par + self.__driving_torques, [expr])
             elif method == 'autowrap - f2py':
                 print('fortran')
                 self.kane_method['lambda func']['forcing vector full'] = autowrap(msubs(expr, self.__map['simplyfied']['mapping']['gen-merged']),\
-                             tempdir=save_dir, args=self.__map['simplyfied']['subs merged'] + self.__driving_torques, backend = 'f2py')
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs merged']+par + self.__driving_torques, backend = 'f2py')
             else:
                 print('cython')
-                self.kane_method['lambda func']['forcing vector full'] = autowrap(msubs(expr, self.__map['dummyfied']['mapping']['gen-merged']),\
-                             tempdir=save_dir, args=self.__map['dummyfied']['subs merged'] + self.__driving_torques, backend = 'cython')
+                self.kane_method['lambda func']['forcing vector full'] = autowrap(msubs(expr, {**self.__map['dummyfied']['mapping']['gen-merged'], **self._map_parameters['dummy-mapping']}),\
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs merged']+par + self.__driving_torques, backend = 'cython')
                 
             print('Done.')
                 
@@ -1746,7 +1787,7 @@ class RoverSimulator:
         
                 
     def showRoverConfiguration(self, q = None, mode = 'plot', lat=0, long=180):
-        
+        par = self._map_parameters['vars-to-sub']
         if q is None:
             q = self.q_initial_condition
             
@@ -1792,7 +1833,7 @@ class RoverSimulator:
                 if self.points[i].name == pt_name:
                     break
             
-            leg_right_to_plot = np.vstack((leg_right_to_plot, self.lambdified_points[i](*q)))
+            leg_right_to_plot = np.vstack((leg_right_to_plot, self.lambdified_points[i](*np.hstack((q,par)))))
         
         
         for pt_name in leg_left:
@@ -1800,7 +1841,7 @@ class RoverSimulator:
                 if self.points[i].name == pt_name:
                     break
             
-            leg_left_to_plot = np.vstack((leg_left_to_plot, self.lambdified_points[i](*q)))
+            leg_left_to_plot = np.vstack((leg_left_to_plot, self.lambdified_points[i](*np.hstack((q,par)))))
             
         
         
@@ -1811,7 +1852,7 @@ class RoverSimulator:
                 if self.points[i].name == pt_name:
                     break
             
-            rod = np.vstack((rod, self.lambdified_points[i](*q)))
+            rod = np.vstack((rod, self.lambdified_points[i](*np.hstack((q,par)))))
         
         
         
@@ -1852,14 +1893,14 @@ class RoverSimulator:
                 if frame.name == iterable_var[i][0]:
                     break
             
-            rot_matrix = self.lambdified_frames[n](*q)
+            rot_matrix = self.lambdified_frames[n](*np.hstack((q,par)))
             RW_rotated = np.dot(rot_matrix.T, wheel_to_plot.T)
             
             for n, point in enumerate(self.points):
                 if point.name == iterable_var[i][1]:
                     break
             
-            translation = self.lambdified_points[n](*q)
+            translation = self.lambdified_points[n](*np.hstack((q,par)))
             
             RW_to_plot = RW_rotated.T + translation
             self.__ax.plot(RW_to_plot[:,0],RW_to_plot[:,1],RW_to_plot[:,2],'-b')
@@ -1870,7 +1911,7 @@ class RoverSimulator:
         
         
         if self.__ground['coeffs']:
-            rover_pos = self.lambdified_points[1](*q)
+            rover_pos = self.lambdified_points[1](*np.hstack((q,par)))
             X,Y = np.meshgrid([rover_pos[0,0]-2, rover_pos[0,0]+2],[rover_pos[0,1]-2, rover_pos[0,1]+2])
             Z = self.__ground['coeffs']['a']*X + self.__ground['coeffs']['b']*Y + self.__ground['coeffs']['c']
             self.__ax.plot_surface(X,Y,Z)
@@ -1895,7 +1936,7 @@ class RoverSimulator:
             
             for n, point in enumerate(self.points):
                 if point.name in centre_names:
-                    pts_to_plot = np.vstack((pts_to_plot,self.lambdified_points[n](*q)))
+                    pts_to_plot = np.vstack((pts_to_plot,self.lambdified_points[n](*np.hstack((q+par)))))
             
             
             self.__ax.scatter(pts_to_plot[:,0], pts_to_plot[:,1], pts_to_plot[:,2], c='k')
@@ -2010,46 +2051,69 @@ class RoverSimulator:
             sim_time = self.config.getfloat('Simulator','step size')
         
         
+        #self._updateParameters()
         
         time_sim = np.arange(0, sim_time+time_step, time_step)
         
         #We will use odeint from scipy
         integrator = self.config.get('Simulator', 'integrator')
         
+        par = self._map_parameters['vars-to-sub']
         
+        k = self.config.getfloat('Ground Properties', 'stiffness')
+        c_max = self.config.getfloat('Ground Properties', 'damping')
+        d = self.config.getfloat('Ground Properties', 'exp')
+        p_max = self.config.getfloat('Ground Properties','max depth')
+        wheel_radius = self.config.getfloat('Model Description','wheel_radius')
+        F_zero = np.zeros((len(self.gen_speeds),1))
+        
+        in_contact_check = [k, c_max, d, p_max, wheel_radius, par, F_zero]
+        
+        
+        right_vector = np.zeros((len(self.gen_coord) + len(self.gen_speeds), 1))
+        
+        
+        #corr = np.zeros((8,))
         def right_hand_side(t, x):
             
-            print(t)
             
-            #Unpack input
+            
+            
             self.current_gen_coord = x[:len(self.gen_coord)]
             self.current_gen_speed = x[len(self.gen_coord):]
+            if self.wheel_controller._current_control_time + self.wheel_controller._sampling_period <= t:
+                print(t)
+                idx = self.wheel_controller.getWheelIndexes()
+                steer = self.current_gen_coord[idx['steer']]
+                drive = self.current_gen_speed[idx['drive']]
             
-            idx = self.wheel_controller.getWheelIndexes()
-            steer = self.current_gen_coord[idx['steer']]
-            drive = self.current_gen_speed[idx['drive']]
-            #print(steer.shape)
-            #print(drive.shape)
             
             #Updating control torques
-            corr = self.wheel_controller.computeTorqueCorrection(np.hstack((steer, drive)))
-            #self.setSteerTorques(*(self.getSteerTorques() + corr[:4]))
-            #self.setDrivingTorque(*(self.getDriveTorques() + corr[4:]))
+                corr = self.wheel_controller.computeTorqueCorrection(np.hstack((steer, drive)))
+                
+                self.setSteerTorques(*corr[:4])
+                self.setDrivingTorque(*corr[4:])
             
-            #print(corr)
             
             self.__gen_coord_history.append(self.current_gen_coord.tolist())
             self.__gen_speed_history.append(self.current_gen_speed.tolist())
             self.__time_history.append(t)
             
             if self.method == 'Kane':
-                Mass_full = self.kane_method['lambda func']['mass matrix full'](*self.current_gen_coord)
-                #forcing_full = self.kane_method['lambda func']['forcing vector full'](*np.hstack((self.current_gen_coord, self.current_gen_speed, self.__current_driving_torque)))
-                forcing_full = self.kane_method['lambda func']['forcing vector full'](*np.hstack((self.current_gen_coord, self.current_gen_speed, corr)))
                 
-                _, F = self.__checkWheelContact2()
+                #Mass_full = self.kane_method['lambda func']['mass matrix full'](*np.hstack((self.current_gen_coord, par)))
+                Mass_full = self.kane_method['lambda func']['mass matrix full'](*self.current_gen_coord.tolist() + par)
                 
-                forcing_full += np.vstack((np.zeros((len(self.gen_coord),1)), F))
+                #forcing_full = self.kane_method['lambda func']['forcing vector full'](*np.hstack((self.current_gen_coord, self.current_gen_speed,par ,self.__current_driving_torque)))
+                forcing_full = self.kane_method['lambda func']['forcing vector full'](*self.current_gen_coord.tolist()+ self.current_gen_speed.tolist()+par+self.__current_driving_torque.tolist())
+                
+                #forcing_full = self.kane_method['lambda func']['forcing vector full'](*np.hstack((self.current_gen_coord, self.current_gen_speed, corr)))
+                
+                _, F = self.__checkWheelContact2(*in_contact_check)
+                
+                
+                right_vector[len(self.gen_coord):] = F
+                forcing_full += right_vector #np.vstack((F_zero, F))
                 
                 sol = np.linalg.inv(Mass_full).dot(forcing_full) 
                 
@@ -2106,7 +2170,7 @@ class RoverSimulator:
             
         else:
             self.ode_sol = solve_ivp(right_hand_side, [time_sim[0], time_sim[-1]],\
-                                     np.hstack((self.current_gen_coord, self.current_gen_speed)), method = integrator.split('ipv - ')[1], rtol=1e-5)
+                                     np.hstack((self.current_gen_coord, self.current_gen_speed)), method = integrator.split('ipv - ')[1], rtol=1e-5, t_eval=time_sim)
         
             
             
@@ -2155,38 +2219,39 @@ class RoverSimulator:
     
     
     
-    def __checkWheelContact2(self):
+    def __checkWheelContact2(self, k, c_max, d, p_max, wheel_radius, par, F):
         mask = None
-        k = self.config.getfloat('Ground Properties', 'stiffness')
-        c_max = self.config.getfloat('Ground Properties', 'damping')
-        d = self.config.getfloat('Ground Properties', 'exp')
-        p_max = self.config.getfloat('Ground Properties','max depth')
-        wheel_radius = self.config.getfloat('Model Description','wheel_radius')
-        
-        F = np.zeros((len(self.gen_speeds),1))
-        
-        
         frame_names = ['FRS_f','BRS_f', 'FLS_f', 'BLS_f']
         wheel_centre_pt_names = ['P_{wfr}', 'P_{wbr}', 'P_{wfl}', 'P_{wbl}']
             
-            
+        F_1 = F.copy()
+        F_d_wheel = [[0],[0],[0]]
         iterable_var = list(zip(frame_names, wheel_centre_pt_names))
         wheel_pts = self.getWheelPoints()
+        
+        in_1 = self.current_gen_coord.tolist()+ par
+        in_2 = self.current_gen_coord.tolist() + self.current_gen_speed.tolist() +par
         
         for i in range(len(iterable_var)):
                 for n, frame in enumerate(self.frames):
                     if frame.name == iterable_var[i][0]:
                         break
                 
-                rot_matrix = self.lambdified_frames[n](*self.current_gen_coord)
+                #rot_matrix = self.lambdified_frames[n](*np.hstack((self.current_gen_coord, par)))
+                rot_matrix = self.lambdified_frames[n](*in_1)
+                #print(rot_matrix)
+                #input('contact-rot_matrix')
                 RW_rotated = np.dot(rot_matrix.T, wheel_pts.T)
                 
                 for n, point in enumerate(self.points):
                     if point.name == iterable_var[i][1]:
                         break
                 
-                translation = self.lambdified_points[n](*self.current_gen_coord)
                 
+                #translation = self.lambdified_points[n](*np.hstack((self.current_gen_coord, par)))
+                translation = self.lambdified_points[n](*in_1)
+                #print(translation)
+                #input('contact-translation')
                 RW_to_plot = RW_rotated.T + translation
                 
                 #z_interp = interpolate.griddata((self.__ground_new[:,0],self.__ground_new[:,1]), self.__ground_new[:,2], RW_to_plot[:,:2],method='cubic')
@@ -2203,59 +2268,64 @@ class RoverSimulator:
                     
                     regions = findContinguousContactRegions(mask)
                     
+                    
                     for region in regions:
-                        x_cm = np.mean(RW_to_plot[region,0])
-                        y_cm = np.mean(RW_to_plot[region,1])
-                        z_cm = np.mean(RW_to_plot[region,2])
+                        v = RW_to_plot[region,:].mean(axis=0)
+                        #x_cm = np.mean(RW_to_plot[region,0])
+                        #y_cm = np.mean(RW_to_plot[region,1])
+                        #z_cm = np.mean(RW_to_plot[region,2])
                         
-                        v = np.array([x_cm,y_cm,z_cm])
+                        #v = np.array([x_cm,y_cm,z_cm])
                         v_t = v -translation
                         v_rot = rot_matrix.dot(v_t.T)
                         
-                        rho = np.sqrt(v_rot[1]**2 + v_rot[2]**2)[0]
-                        a = np.arctan(v_rot[1]/np.abs(v_rot[2]))[0]
+                        rho = math.sqrt(v_rot[1][0]**2 + v_rot[2][0]**2)
+                        a = math.atan(v_rot[1][0]/abs(v_rot[2][0]))
                         
-                        #print(rho)
+                        #print(v_rot)
                         #print(a)
                         
                         delta = wheel_radius - rho
                         
                         c = step5(delta, 0, 0, p_max, c_max)
                         
-                        F_k_wheel = np.array([[0,0,k*delta**d]])
+                        F_k_wheel = [[0],[0],[k*delta**d]]
                         
-                        sym = np.array([rho,a])
+                        #sym = np.array([rho,a])
+                        sym = [rho, a]
                         
-                        partial = self.contact_parametric['lambda'][i][3](*np.hstack((self.current_gen_coord, sym)))
-                        vel = self.contact_parametric['lambda'][i][2](*np.hstack((self.current_gen_coord, self.current_gen_speed, sym)))
-                        F_d_wheel = -c*vel
+                        partial = self.contact_parametric['lambda'][i][3](*in_1 + sym)
+                        #vel = self.contact_parametric['lambda'][i][2](*np.hstack((self.current_gen_coord,self.current_gen_speed,par, sym)))
+                        vel = self.contact_parametric['lambda'][i][2](*in_2 + sym)
+                        #print(vel)
                         
-                        F_d_wheel[0,:2] = 0 #Check
+                        F_d_wheel[-1][0] = -c*vel[0][-1]
+                        #print(F_d_wheel)
                         
-                        F += np.dot(partial, F_d_wheel.T) + np.dot(partial, F_k_wheel.T)
+                        #F_d_wheel[0,:2] = 0 #Check
+                        #print(F_d_wheel)
+                        
+                        F_1 += np.dot(partial, F_d_wheel) + np.dot(partial, F_k_wheel)
                         
                         #Add Friction component
                         
                         v_f = vel[0,:2]
                         
-                        v_norm = np.sqrt(v_f[0]**2 + v_f[1]**2) #Vector norm
+                        v_norm = math.sqrt(v_f[0]**2 + v_f[1]**2) #Vector norm
                         
                         mu = self.friction.computeFrictionCoeffiecient(v_norm)
-                        #mu/=5
-                        #mu=0.1
-                        #print(mu)
-                        #print(mu)
-                        F_friction = -mu*(F_k_wheel[0,-1])# + F_d_wheel[0,-1]) #Modulus
+                        
+                        F_friction = -mu*(F_k_wheel[-1][0])# + F_d_wheel[0,-1]) #Modulus
                         #F_friction = -mu*10
-                        F_fr_vec = np.hstack((F_friction*v_f/v_norm, [0]))
+                        F_fr_vec = [[F_friction*v_f[0]/v_norm],[F_friction*v_f[1]/v_norm], [0]] #np.hstack((F_friction*v_f/v_norm, [0]))
                         #print(F_fr_vec)
                         
-                        F += np.dot(partial, np.array([F_fr_vec]).T)
+                        F_1 += np.dot(partial, F_fr_vec)
                         
                         
                     
                 
-        return mask, F        
+        return mask, F_1        
                 
             
              
@@ -2287,6 +2357,36 @@ class RoverSimulator:
         self.__gen_speed_history = list(list())
         
         self.ode_sol = None
+        
+        self.__current_driving_torque = np.zeros((8,))
+        
+        steer_target = self.wheel_controller._steer_target
+        drive_target = self.wheel_controller._drive_target
+        
+        steer_gains = self.wheel_controller.getSteerGains()
+        drive_gains = self.wheel_controller.getDriveGains()
+        
+        steer_p_gains = np.diag(steer_gains['P'])
+        steer_d_gains = np.diag(steer_gains['D'])
+        steer_i_gains = np.diag(steer_gains['I'])
+        
+        drive_p_gains = np.diag(drive_gains['P'])
+        drive_d_gains = np.diag(drive_gains['D'])
+        drive_i_gains = np.diag(drive_gains['I'])
+        
+        
+        self._initWheelControl()
+        self.wheel_controller.setSteerTarget(steer_target)   
+        self.wheel_controller.setDriveTarget(drive_target)
+        
+        self.wheel_controller.setSteerGains(steer_p_gains,'P')
+        self.wheel_controller.setSteerGains(steer_d_gains,'D')
+        self.wheel_controller.setSteerGains(steer_i_gains,'I')
+        
+        self.wheel_controller.setDriveGains(drive_p_gains,'P')
+        self.wheel_controller.setDriveGains(drive_d_gains,'D')
+        self.wheel_controller.setDriveGains(drive_i_gains,'I')
+        
         
         if reloadConfig:
             self.loadConfig()
@@ -2369,7 +2469,7 @@ class RoverSimulator:
         
         
         
-    def animateMotion(self, t = None, states = None, lat = 0, long = 180):
+    def animateMotion(self, t = None, states = None, lat = 0, long = 180, override_save=None):
         """
         This method is used in order to create a video animation of the siomulation
         conducted on the robot
@@ -2404,7 +2504,7 @@ class RoverSimulator:
             except:
                     raise RuntimeError('Calling animateMotion without arguments uses class simulation stored data.')
                     
-        
+        par = self._map_parameters['vars-to-sub']
         #Initilize figure objects
         fig = plt.figure()
         ax = Axes3D(fig)
@@ -2547,7 +2647,7 @@ class RoverSimulator:
                     if self.points[i].name == pt_name:
                         break
                 
-                leg_right_to_plot = np.vstack((leg_right_to_plot, self.lambdified_points[i](*q)))
+                leg_right_to_plot = np.vstack((leg_right_to_plot, self.lambdified_points[i](*np.hstack((q, par)))))
         
         
             for pt_name in leg_left:
@@ -2555,7 +2655,7 @@ class RoverSimulator:
                     if self.points[i].name == pt_name:
                         break
                 
-                leg_left_to_plot = np.vstack((leg_left_to_plot, self.lambdified_points[i](*q)))
+                leg_left_to_plot = np.vstack((leg_left_to_plot, self.lambdified_points[i](*np.hstack((q, par)))))
             
         
         
@@ -2566,7 +2666,7 @@ class RoverSimulator:
                     if self.points[i].name == pt_name:
                         break
                 
-                rod = np.vstack((rod, self.lambdified_points[i](*q)))
+                rod = np.vstack((rod, self.lambdified_points[i](*np.hstack((q, par)))))
                 
                 
             line1.set_data(leg_right_to_plot[:,0],leg_right_to_plot[:,1])
@@ -2602,14 +2702,14 @@ class RoverSimulator:
                     if frame.name == iterable_var[i][0]:
                         break
                 
-                rot_matrix = self.lambdified_frames[n](*q)
+                rot_matrix = self.lambdified_frames[n](*np.hstack((q, par)))
                 RW_rotated = np.dot(rot_matrix.T, wheel_to_plot.T)
                 
                 for n, point in enumerate(self.points):
                     if point.name == iterable_var[i][1]:
                         break
                 
-                translation = self.lambdified_points[n](*q)
+                translation = self.lambdified_points[n](*np.hstack((q, par)))
                 
                 RW_to_plot = RW_rotated.T + translation
                 #ax.plot(RW_to_plot[:,0],RW_to_plot[:,1],RW_to_plot[:,2],'-b')
@@ -2635,15 +2735,16 @@ class RoverSimulator:
                 return time_text, line1, line2, line3, line4, line5, line6, line7
         
         
-        anim = animation.FuncAnimation(fig, animate, frames=len(t), init_func=init, blit = True)
+        anim = animation.FuncAnimation(fig, animate, frames=len(t), init_func=init, blit = True, interval = 1)
         ani_fps = int(self.config.getfloat('Plotting','animation fps'))
         
         if self.config.getboolean('Plotting','live animation'):
             plt.show()
+            
         
         
         
-        if self.config.getboolean('Plotting', 'save animation'):
+        if self.config.getboolean('Plotting', 'save animation') and override_save is None:
             if self.config.get('Plotting','animation name') == 'auto':
                 cwd = os.getcwd()
                 
@@ -2783,9 +2884,11 @@ class RoverSimulator:
         pts_pos = np.empty((0,3), dtype='float64')
         
         pts_names = ['P_{contact_right_front}',
-                     'P_{contact_right_front}',
-                     'P_{contact_right_front}',
-                     'P_{contact_right_front}']
+                     'P_{contact_right_back}',
+                     'P_{contact_left_front}',
+                     'P_{contact_left_back}']
+        
+        par = self._map_parameters['vars-to-sub']
         
         for i in range(len(pts_names)):
             
@@ -2793,7 +2896,7 @@ class RoverSimulator:
                 if pt.name==pts_names[i]:
                     break
                 
-            pts_pos = np.vstack((pts_pos, self.lambdified_points[j](*self.current_gen_coord)))
+            pts_pos = np.vstack((pts_pos, self.lambdified_points[j](*np.hstack((self.current_gen_coord, par)))))
             
             
         
@@ -2801,7 +2904,7 @@ class RoverSimulator:
         # Select only z-axis
         z = pts_pos[:,-1]
         idx_min = np.argmin(z)
-        return pts_names[idx_min], z[idx_min]
+        return pts_names[idx_min], z[idx_min], pts_pos[idx_min, :]
     
     
     
@@ -2810,7 +2913,7 @@ class RoverSimulator:
         
         
     def _initWheelControl(self):
-        self.wheel_controller = RoverWheelControl()
+        self.wheel_controller = RoverWheelControl(controller_frequency=100)
         if self.__config_found:
             steer_gains = 4*[0]
             drive_gains = 4*[0]
@@ -2819,8 +2922,22 @@ class RoverSimulator:
                 steer_gains[i] = self.config.getfloat('Wheel-Steer-Controller', 'K'+str(i+1))
                 drive_gains[i] = self.config.getfloat('Wheel-Drive-Controller', 'K'+str(i+1))
                 
-            self.wheel_controller.setSteerGains(steer_gains)
-            self.wheel_controller.setDriveGains(drive_gains)
+            self.wheel_controller.setSteerGains(steer_gains, 'P')
+            self.wheel_controller.setDriveGains(drive_gains, 'P')
+            
+            for i in range(4):
+                steer_gains[i] = self.config.getfloat('Wheel-Steer-Controller', 'D'+str(i+1))
+                drive_gains[i] = self.config.getfloat('Wheel-Drive-Controller', 'D'+str(i+1))
+            
+            self.wheel_controller.setSteerGains(steer_gains, 'D')
+            self.wheel_controller.setDriveGains(drive_gains, 'D')
+            
+            for i in range(4):
+                steer_gains[i] = self.config.getfloat('Wheel-Steer-Controller', 'I'+str(i+1))
+                drive_gains[i] = self.config.getfloat('Wheel-Drive-Controller', 'I'+str(i+1))
+            
+            self.wheel_controller.setSteerGains(steer_gains, 'I')
+            self.wheel_controller.setDriveGains(drive_gains, 'I')
         
         
         #Try on assigning wheels index based on position of gen coordinatetes
@@ -2833,19 +2950,401 @@ class RoverSimulator:
             for i, coord in enumerate(self.gen_coord):
                 if coord.name == name:
                     break
-            print(i)    
+            #print(i)    
             if name[:-1] == 'delta':
                 steer_idx.append(i)
             else:
                 drive_idx.append(i)
                 
         self.wheel_controller.setWheelIndexes(steer_idx, drive_idx)
-                
+        
+    def saveLambdaFunctions(self, path = None, model_name = ''):
+        if path is None:
+            curr_path = os.path.dirname(__file__)
+            path_to_save = os.path.join(curr_path, 'data', 'model',model_name)
+        else:
+            path_to_save = os.path.join(path,'model', model_name)
             
         
+        if not os.path.isdir(path_to_save):
+            os.makedirs(path_to_save)
+            
+        
+        #Now start to save the lambda functions
+        with open(os.path.join(path_to_save, 'lambda_frames_pos.pickle'),'wb') as f:
+            cloudpickle.dump(self.lambdified_frames, f)
+            
+        with open(os.path.join(path_to_save,'lambda_frames_speed.pickle'), 'wb') as f:
+            cloudpickle.dump(self.lambdified_frames_ang_vel, f)
+            
+        with open(os.path.join(path_to_save, 'lambda_frames_acc.pickle'),'wb') as f:
+            cloudpickle.dump(self.lambdified_frames_ang_acc, f)
+        
+        with open(os.path.join(path_to_save, 'lambda_points_pos.pickle'),'wb') as f:
+            cloudpickle.dump(self.lambdified_points, f)
+            
+        with open(os.path.join(path_to_save, 'lambda_points_vel.pickle'), 'wb') as f:
+            cloudpickle.dump(self.lambdified_points_vel, f)
+            
+        with open(os.path.join(path_to_save, 'lambda_points_acc.pickle'), 'wb') as f:
+            cloudpickle.dump(self.lambdified_points_acc, f)
+            
+        with open(os.path.join(path_to_save, 'lambda_partial_velocity.pickle'), 'wb') as f:
+            cloudpickle.dump(self.lambdified_partial_velocities, f)
+            
+        with open(os.path.join(path_to_save, 'lambda_parametric_velocity.pickle'), 'wb') as f:
+            cloudpickle.dump(self.contact_parametric['lambda'], f)
+            
+        with open(os.path.join(path_to_save, 'lambda_dynamics_matrix.pickle'), 'wb') as f:
+            cloudpickle.dump(self.kane_method['lambda func'], f)
+            
+        
+        
+    def loadLambdaFunctions(self, folder_name = None, model_name='', wrapper_folder = 'data/wrappers'):
+        # Load all the modules in the folder
+        if folder_name is None:
+            curr_path = os.path.dirname(__file__)
+            path_to_load = os.path.join(curr_path, 'data', 'model',model_name)
+        else:
+            path_to_load = os.path.join(folder_name,model_name)
+            
+        
+        #It is important to load first the wrapper modules
+        #wrapper_folder = wrapper_folder.replace('/', '.')
+        
+        self.__ext_modules = list()
+        
+        curr_wd = os.getcwd()
+        os.chdir(os.path.join(curr_wd, *wrapper_folder.split('/')))
+        print(os.getcwd())
+        
+        
+        for i in range(1000):
+            try:
+                #print(wrapper_folder+'.wrapper_module_')
+                #self.__ext_modules.append(__import__(wrapper_folder + '.wrapper_module_'+str(i)))
+                #self.__ext_modules.append(importlib.import_module('rover_multibody_simulator.demo.data.wrappers.'+'wrapper_module_'+str(i)))
+                self.__ext_modules.append(importlib.import_module('wrapper_module_'+str(i)))
+                #print('rover_multibody_simulator.demo.'+wrapper_folder + '.wrapper_module_'+str(i))
+            except:
+                pass
+        os.chdir(curr_wd)
+        
+        if len(self.__ext_modules) == 0:
+            print('Warning: No modules found!')
+            
+        #Try to load the saved pickle files
+        
+        with open(os.path.join(path_to_load, 'lambda_frames_pos.pickle'), 'rb') as f:
+            self.lambdified_frames = cloudpickle.load(f)
+        
+            
+        
+        with open(os.path.join(path_to_load, 'lambda_frames_speed.pickle'), 'rb') as f:
+            self.lambdified_frames_ang_vel = cloudpickle.load(f)
+            
+        
+        with open(os.path.join(path_to_load, 'lambda_frames_acc.pickle'), 'rb') as f:
+            self.lambdified_frames_ang_acc = cloudpickle.load(f)
+            
+        
+        with open(os.path.join(path_to_load, 'lambda_points_pos.pickle'), 'rb') as f:
+            self.lambdified_points = cloudpickle.load(f)
+            
+        with open(os.path.join(path_to_load, 'lambda_points_vel.pickle'), 'rb') as f:
+            self.lambdified_points_vel = cloudpickle.load(f)
+            
+        
+        with open(os.path.join(path_to_load, 'lambda_points_acc.pickle'), 'rb') as f:
+            self.lambdified_points_acc = cloudpickle.load(f)
+            
+        with open(os.path.join(path_to_load, 'lambda_partial_velocity.pickle'), 'rb') as f:
+            self.lambdified_partial_velocities = cloudpickle.load(f)
+            
+        with open(os.path.join(path_to_load, 'lambda_parametric_velocity.pickle'), 'rb') as f:
+            self.contact_parametric['lambda'] = cloudpickle.load(f)
+            
+        with open(os.path.join(path_to_load, 'lambda_dynamics_matrix.pickle'), 'rb') as f:
+            self.kane_method['lambda func'] = cloudpickle.load(f)
+            
+            
     
+    def _createParamMapping(self):
+        #Create parameter mapping
+        self._map_parameters['parameters'] = dict()
+        self._map_parameters['dummy-symbols'] = [Dummy() for i in self._map_parameters['symbols']]
+        
+        if self.__config_found:
+            #ROVER BODY PARAMETERS
+            self._map_parameters['parameters']['rover_mass'] = self.config.getfloat('Model Description','rover_mass')
+            self._map_parameters['parameters']['rover_inertia_xx'] = self.config.getfloat('Model Description','rover_inertia_xx')
+            self._map_parameters['parameters']['rover_inertia_yy'] = self.config.getfloat('Model Description','rover_inertia_yy')
+            self._map_parameters['parameters']['rover_inertia_zz'] = self.config.getfloat('Model Description','rover_inertia_zz')
+            self._map_parameters['parameters']['rover_inertia_xy'] = self.config.getfloat('Model Description','rover_inertia_xy')
+            self._map_parameters['parameters']['rover_inertia_xz'] = self.config.getfloat('Model Description','rover_inertia_xz')
+            self._map_parameters['parameters']['rover_inertia_yz'] = self.config.getfloat('Model Description','rover_inertia_yz')
+            
+            
+            #BOGIE BODY PARAMETERS
+            self._map_parameters['parameters']['arm_offset_x'] = self.config.getfloat('Model Description','arm_offset_x')
+            self._map_parameters['parameters']['arm_offset_y'] = self.config.getfloat('Model Description','arm_offset_y')
+            self._map_parameters['parameters']['arm_offset_z'] = self.config.getfloat('Model Description','arm_offset_z')
+            self._map_parameters['parameters']['arm_cm_distance'] = self.config.getfloat('Model Description','arm_cm_distance')
+            self._map_parameters['parameters']['hinge1_len'] = self.config.getfloat('Model Description','hinge1_len')
+            self._map_parameters['parameters']['hinge1_height'] = self.config.getfloat('Model Description','hinge1_height')
+            self._map_parameters['parameters']['swing_arm_mass'] = self.config.getfloat('Model Description','swing_arm_mass')
+            self._map_parameters['parameters']['swing_arm_inertia_xx'] = self.config.getfloat('Model Description','swing_arm_inertia_xx')
+            self._map_parameters['parameters']['swing_arm_inertia_yy'] = self.config.getfloat('Model Description','swing_arm_inertia_yy')
+            self._map_parameters['parameters']['swing_arm_inertia_zz'] = self.config.getfloat('Model Description','swing_arm_inertia_zz')
+            self._map_parameters['parameters']['swing_arm_inertia_xy'] = self.config.getfloat('Model Description','swing_arm_inertia_xy')
+            self._map_parameters['parameters']['swing_arm_inertia_xz'] = self.config.getfloat('Model Description','swing_arm_inertia_xz')
+            self._map_parameters['parameters']['swing_arm_inertia_yz'] = self.config.getfloat('Model Description','swing_arm_inertia_yz')
+            
+            
+            #CENTRAL LINK PROPERTIES
+            self._map_parameters['parameters']['central_link_cm_dist_x'] = self.config.getfloat('Model Description','central_link_cm_dist_x')
+            self._map_parameters['parameters']['central_link_cm_dist_y'] = self.config.getfloat('Model Description','central_link_cm_dist_y')
+            self._map_parameters['parameters']['central_link_cm_dist_z'] = self.config.getfloat('Model Description','central_link_cm_dist_z')
+            self._map_parameters['parameters']['central_link_lenght'] = self.config.getfloat('Model Description','central_link_lenght')
+            self._map_parameters['parameters']['central_link_mass'] = self.config.getfloat('Model Description','central_link_mass')
+            self._map_parameters['parameters']['central_link_inertia_xx'] = self.config.getfloat('Model Description','central_link_inertia_xx')
+            self._map_parameters['parameters']['central_link_inertia_yy'] = self.config.getfloat('Model Description','central_link_inertia_yy')
+            self._map_parameters['parameters']['central_link_inertia_zz'] = self.config.getfloat('Model Description','central_link_inertia_zz')
+            self._map_parameters['parameters']['central_link_inertia_xy'] = self.config.getfloat('Model Description','central_link_inertia_xy')
+            self._map_parameters['parameters']['central_link_inertia_xz'] = self.config.getfloat('Model Description','central_link_inertia_xz')
+            self._map_parameters['parameters']['central_link_inertia_yz'] = self.config.getfloat('Model Description','central_link_inertia_yz')
+            
+            
+            #TERMINAL LINK PROPERTIES
+            self._map_parameters['parameters']['terminal_link_cm_dist_x'] = self.config.getfloat('Model Description','terminal_link_cm_dist_x')
+            self._map_parameters['parameters']['terminal_link_cm_dist_y'] = self.config.getfloat('Model Description','terminal_link_cm_dist_y')
+            self._map_parameters['parameters']['terminal_link_cm_dist_z'] = self.config.getfloat('Model Description','terminal_link_cm_dist_z')
+            self._map_parameters['parameters']['terminal_link_lenght'] = self.config.getfloat('Model Description','terminal_link_lenght')
+            self._map_parameters['parameters']['terminal_link_mass'] = self.config.getfloat('Model Description','terminal_link_mass')
+            self._map_parameters['parameters']['terminall_link_inertia_xx'] = self.config.getfloat('Model Description','terminal_link_inertia_xx')
+            self._map_parameters['parameters']['terminal_link_inertia_yy'] = self.config.getfloat('Model Description','terminal_link_inertia_yy')
+            self._map_parameters['parameters']['terminal_link_inertia_zz'] = self.config.getfloat('Model Description','terminal_link_inertia_zz')
+            self._map_parameters['parameters']['terminal_link_inertia_xy'] = self.config.getfloat('Model Description','terminal_link_inertia_xy')
+            self._map_parameters['parameters']['terminal_link_inertia_xz'] = self.config.getfloat('Model Description','terminal_link_inertia_xz')
+            self._map_parameters['parameters']['terminal_link_inertia_yz'] = self.config.getfloat('Model Description','terminal_link_inertia_yz')
+            
+            
+            #WHEEL BODY PROPERTIES
+            self._map_parameters['parameters']['wheel_offset_x'] = self.config.getfloat('Model Description','wheel_offset_x')
+            self._map_parameters['parameters']['wheel_offset_y'] = self.config.getfloat('Model Description','wheel_offset_y')
+            self._map_parameters['parameters']['wheel_offset_z'] = self.config.getfloat('Model Description','wheel_offset_z')
+            self._map_parameters['parameters']['wheel_mass'] = self.config.getfloat('Model Description','wheel_mass')
+            self._map_parameters['parameters']['wheel_inertia_xx'] = self.config.getfloat('Model Description','wheel_inertia_xx')
+            self._map_parameters['parameters']['wheel_inertia_yy'] = self.config.getfloat('Model Description','wheel_inertia_yy')
+            self._map_parameters['parameters']['wheel_inertia_zz'] = self.config.getfloat('Model Description','wheel_inertia_zz')
+            self._map_parameters['parameters']['terminal_link_inertia_zz'] = self.config.getfloat('Model Description','terminal_link_inertia_zz')
+            self._map_parameters['parameters']['terminal_link_inertia_xy'] = self.config.getfloat('Model Description','terminal_link_inertia_xy')
+            self._map_parameters['parameters']['terminal_link_inertia_xz'] = self.config.getfloat('Model Description','terminal_link_inertia_xz')
+            self._map_parameters['parameters']['terminal_link_inertia_yz'] = self.config.getfloat('Model Description','terminal_link_inertia_yz')
+            self._map_parameters['parameters']['wheel_radius'] = self.config.getfloat('Model Description','wheel_radius')
+            
+            
+            #SPRINGS PARAMETERS
+            self._map_parameters['parameters']['E_fr1'] = self.config.getfloat('Springs Definition','E_fr1')
+            self._map_parameters['parameters']['E_br1'] = self.config.getfloat('Springs Definition','E_br1')
+            self._map_parameters['parameters']['E_fl1'] = self.config.getfloat('Springs Definition','E_fl1')
+            self._map_parameters['parameters']['E_bl1'] = self.config.getfloat('Springs Definition','E_bl1')
+            self._map_parameters['parameters']['E_fr2'] = self.config.getfloat('Springs Definition','E_fr2')
+            self._map_parameters['parameters']['E_br2'] = self.config.getfloat('Springs Definition','E_br2')
+            self._map_parameters['parameters']['E_fl2'] = self.config.getfloat('Springs Definition','E_fl2')
+            self._map_parameters['parameters']['E_bl2'] = self.config.getfloat('Springs Definition','E_bl2')
+            
+            self._map_parameters['parameters']['k_fr1'] = self.config.getfloat('Springs Definition','k_fr1')
+            self._map_parameters['parameters']['k_br1'] = self.config.getfloat('Springs Definition','k_br1')
+            self._map_parameters['parameters']['k_fl1'] = self.config.getfloat('Springs Definition','k_fl1')
+            self._map_parameters['parameters']['k_bl1'] = self.config.getfloat('Springs Definition','k_bl1')
+            self._map_parameters['parameters']['k_fr2'] = self.config.getfloat('Springs Definition','k_fr2')
+            self._map_parameters['parameters']['k_br2'] = self.config.getfloat('Springs Definition','k_br2')
+            self._map_parameters['parameters']['k_fl2'] = self.config.getfloat('Springs Definition','k_fl2')
+            self._map_parameters['parameters']['k_bl2'] = self.config.getfloat('Springs Definition','k_bl2')
+            
+            self._map_parameters['parameters']['M0_fr1'] = self.config.getfloat('Springs Definition','M0_fr1')
+            self._map_parameters['parameters']['M0_br1'] = self.config.getfloat('Springs Definition','M0_br1')
+            self._map_parameters['parameters']['M0_fl1'] = self.config.getfloat('Springs Definition','M0_fl1')
+            self._map_parameters['parameters']['M0_bl1'] = self.config.getfloat('Springs Definition','M0_bl1')
+            self._map_parameters['parameters']['M0_fr2'] = self.config.getfloat('Springs Definition','M0_fr2')
+            self._map_parameters['parameters']['M0_br2'] = self.config.getfloat('Springs Definition','M0_br2')
+            self._map_parameters['parameters']['M0_fl2'] = self.config.getfloat('Springs Definition','M0_fl2')
+            self._map_parameters['parameters']['M0_bl2'] = self.config.getfloat('Springs Definition','M0_bl2')
+            
+            self._map_parameters['parameters']['f_fr1'] = self.config.getfloat('Springs Definition','f_fr1')
+            self._map_parameters['parameters']['f_br1'] = self.config.getfloat('Springs Definition','f_br1')
+            self._map_parameters['parameters']['f_fl1'] = self.config.getfloat('Springs Definition','f_fl1')
+            self._map_parameters['parameters']['f_bl1'] = self.config.getfloat('Springs Definition','f_bl1')
+            self._map_parameters['parameters']['f_fr2'] = self.config.getfloat('Springs Definition','f_fr2')
+            self._map_parameters['parameters']['f_br2'] = self.config.getfloat('Springs Definition','f_br2')
+            self._map_parameters['parameters']['f_fl2'] = self.config.getfloat('Springs Definition','f_fl2')
+            self._map_parameters['parameters']['f_bl2'] = self.config.getfloat('Springs Definition','f_bl2')
+            
+            self._map_parameters['parameters']['c_fr1'] = self.config.getfloat('Springs Definition','c_fr1')
+            self._map_parameters['parameters']['c_br1'] = self.config.getfloat('Springs Definition','c_br1')
+            self._map_parameters['parameters']['c_fl1'] = self.config.getfloat('Springs Definition','c_fl1')
+            self._map_parameters['parameters']['c_bl1'] = self.config.getfloat('Springs Definition','c_bl1')
+            self._map_parameters['parameters']['c_fr2'] = self.config.getfloat('Springs Definition','c_fr2')
+            self._map_parameters['parameters']['c_br2'] = self.config.getfloat('Springs Definition','c_br2')
+            self._map_parameters['parameters']['c_fl2'] = self.config.getfloat('Springs Definition','c_fl2')
+            self._map_parameters['parameters']['c_bl2'] = self.config.getfloat('Springs Definition','c_bl2')
+            
+            if not self.config.getboolean('Model Description', 'initial symbols substitution'):
+                self._map_parameters['symbols-to-sub'] = self._map_parameters['symbols']
+                self._map_parameters['dummy-to-sub'] = self._map_parameters['dummy-symbols']
+                
+                self._map_parameters['vars-to-sub'] = list(self._map_parameters['parameters'].values())
+                
+            else:
+                self._map_parameters['symbols-to-sub'] = list()
+                self._map_parameters['vars-to-sub'] = list()
+                self._map_parameters['dummy-to-sub'] = list()
+                
+            self._map_parameters['dummy-mapping'] = dict(zip(self._map_parameters['symbols-to-sub'], self._map_parameters['dummy-to-sub']))
+            
+            
+        else:
+            self._map_parameters['parameters']['rover_mass'] = 0
+            self._map_parameters['parameters']['rover_inertia_xx'] = 0
+            self._map_parameters['parameters']['rover_inertia_yy'] = 0
+            self._map_parameters['parameters']['rover_inertia_zz'] = 0
+            self._map_parameters['parameters']['rover_inertia_xy'] = 0
+            self._map_parameters['parameters']['rover_inertia_xz'] = 0
+            self._map_parameters['parameters']['rover_inertia_yz'] = 0
+            
+            
+            #BOGIE BODY PARAMETERS
+            self._map_parameters['parameters']['arm_offset_x'] = 0
+            self._map_parameters['parameters']['arm_offset_y'] = 0
+            self._map_parameters['parameters']['arm_offset_z'] = 0
+            self._map_parameters['parameters']['arm_cm_distance'] = 0
+            self._map_parameters['parameters']['hinge1_len'] = 0
+            self._map_parameters['parameters']['hinge1_height'] = 0
+            self._map_parameters['parameters']['swing_arm_mass'] = 0
+            self._map_parameters['parameters']['swing_arm_inertia_xx'] = 0
+            self._map_parameters['parameters']['swing_arm_inertia_yy'] = 0
+            self._map_parameters['parameters']['swing_arm_inertia_zz'] = 0
+            self._map_parameters['parameters']['swing_arm_inertia_xy'] = 0
+            self._map_parameters['parameters']['swing_arm_inertia_xz'] = 0
+            self._map_parameters['parameters']['swing_arm_inertia_yz'] = 0
+            
+            
+            #CENTRAL LINK PROPERTIES
+            self._map_parameters['parameters']['central_link_cm_dist_x'] = 0
+            self._map_parameters['parameters']['central_link_cm_dist_y'] =0
+            self._map_parameters['parameters']['central_link_cm_dist_z'] = 0
+            self._map_parameters['parameters']['central_link_lenght'] = 0
+            self._map_parameters['parameters']['central_link_mass'] = 0
+            self._map_parameters['parameters']['central_link_inertia_xx'] = 0
+            self._map_parameters['parameters']['central_link_inertia_yy'] = 0
+            self._map_parameters['parameters']['central_link_inertia_zz'] = 0
+            self._map_parameters['parameters']['central_link_inertia_xy'] = 0
+            self._map_parameters['parameters']['central_link_inertia_xz'] = 0
+            self._map_parameters['parameters']['central_link_inertia_yz'] = 0
+            
+            
+            #TERMINAL LINK PROPERTIES
+            self._map_parameters['parameters']['terminal_link_cm_dist_x'] = 0
+            self._map_parameters['parameters']['terminal_link_cm_dist_y'] = 0
+            self._map_parameters['parameters']['terminal_link_cm_dist_z'] = 0
+            self._map_parameters['parameters']['terminal_link_lenght'] = 0
+            self._map_parameters['parameters']['terminal_link_mass'] = 0
+            self._map_parameters['parameters']['terminall_link_inertia_xx'] = 0
+            self._map_parameters['parameters']['terminal_link_inertia_yy'] = 0
+            self._map_parameters['parameters']['terminal_link_inertia_zz'] = 0
+            self._map_parameters['parameters']['terminal_link_inertia_xy'] = 0
+            self._map_parameters['parameters']['terminal_link_inertia_xz'] = 0
+            self._map_parameters['parameters']['terminal_link_inertia_yz'] = 0
+            
+            
+            #WHEEL BODY PROPERTIES
+            self._map_parameters['parameters']['wheel_offset_x'] = 0
+            self._map_parameters['parameters']['wheel_offset_y'] = 0
+            self._map_parameters['parameters']['wheel_offset_z'] = 0
+            self._map_parameters['parameters']['wheel_mass'] = 0
+            self._map_parameters['parameters']['wheel_inertia_xx'] = 0
+            self._map_parameters['parameters']['wheel_inertia_yy'] = 0
+            self._map_parameters['parameters']['wheel_inertia_zz'] = 0
+            self._map_parameters['parameters']['terminal_link_inertia_zz'] = 0
+            self._map_parameters['parameters']['terminal_link_inertia_xy'] = 0
+            self._map_parameters['parameters']['terminal_link_inertia_xz'] = 0
+            self._map_parameters['parameters']['terminal_link_inertia_yz'] = 0
+            self._map_parameters['parameters']['wheel_radius'] = 0
+            
+            
+            #SPRINGS PARAMETERS
+            self._map_parameters['parameters']['E_fr1'] = 0
+            self._map_parameters['parameters']['E_br1'] = 0
+            self._map_parameters['parameters']['E_fl1'] = 0
+            self._map_parameters['parameters']['E_bl1'] = 0
+            self._map_parameters['parameters']['E_fr2'] = 0
+            self._map_parameters['parameters']['E_br2'] = 0
+            self._map_parameters['parameters']['E_fl2'] = 0
+            self._map_parameters['parameters']['E_bl2'] = 0
+            
+            self._map_parameters['parameters']['k_fr1'] = 0
+            self._map_parameters['parameters']['k_br1'] = 0
+            self._map_parameters['parameters']['k_fl1'] = 0
+            self._map_parameters['parameters']['k_bl1'] = 0
+            self._map_parameters['parameters']['k_fr2'] = 0
+            self._map_parameters['parameters']['k_br2'] = 0
+            self._map_parameters['parameters']['k_fl2'] = 0
+            self._map_parameters['parameters']['k_bl2'] = 0
+            
+            self._map_parameters['parameters']['M0_fr1'] = 0
+            self._map_parameters['parameters']['M0_br1'] = 0
+            self._map_parameters['parameters']['M0_fl1'] = 0
+            self._map_parameters['parameters']['M0_bl1'] = 0
+            self._map_parameters['parameters']['M0_fr2'] = 0
+            self._map_parameters['parameters']['M0_br2'] = 0
+            self._map_parameters['parameters']['M0_fl2'] = 0
+            self._map_parameters['parameters']['M0_bl2'] = 0
+            
+            self._map_parameters['parameters']['f_fr1'] = 0
+            self._map_parameters['parameters']['f_br1'] = 0
+            self._map_parameters['parameters']['f_fl1'] = 0
+            self._map_parameters['parameters']['f_bl1'] = 0
+            self._map_parameters['parameters']['f_fr2'] = 0
+            self._map_parameters['parameters']['f_br2'] = 0
+            self._map_parameters['parameters']['f_fl2'] = 0
+            self._map_parameters['parameters']['f_bl2'] = 0
+            
+            self._map_parameters['parameters']['c_fr1'] = 0
+            self._map_parameters['parameters']['c_br1'] = 0
+            self._map_parameters['parameters']['c_fl1'] = 0
+            self._map_parameters['parameters']['c_bl1'] = 0
+            self._map_parameters['parameters']['c_fr2'] = 0
+            self._map_parameters['parameters']['c_br2'] = 0
+            self._map_parameters['parameters']['c_fl2'] = 0
+            self._map_parameters['parameters']['c_bl2'] = 0
+            
+            
+            self._map_parameters['vars-to-sub'] = list(self._map_parameters['parameters'].values())
+        
+            self._map_parameters['symbols-to-sub'] = self._map_parameters['symbols']
+            self._map_parameters['dummy-to-sub'] = self._map_parameters['dummy-symbols']
+            self._map_parameters['dummy-mapping'] = dict(zip(self._map_parameters['symbols-to-sub'], self._map_parameters['dummy-to-sub']))
         
         
+    def setParameters(self, param_name, value):
+        valid_names = list(self._map_parameters['parameters'].keys())
+        if param_name not in valid_names:
+            raise ValueError('Input parameter is not a valid one')
+            
+        self._map_parameters[param_name] = value
+        
+    def _updateParameters(self):
+        if self.__config_found:
+            if self.config.getboolean('Model Description', 'initial symbols substitution'):
+                self._map_parameters['symbols-to-sub'] = list()
+                self._map_parameters['vars-to-sub'] = list()
+            else:
+                self._map_parameters['symbols-to-sub'] = self._map_parameters['symbols']
+                self._map_parameters['vars-to-sub'] = list(self._map_parameters['parameters'].values())
+        else:
+                self._map_parameters['symbols-to-sub'] = self._map_parameters['symbols']
+                self._map_parameters['vars-to-sub'] = list(self._map_parameters['parameters'].values())
         
         
         

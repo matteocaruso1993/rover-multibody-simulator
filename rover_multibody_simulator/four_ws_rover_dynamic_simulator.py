@@ -17,9 +17,10 @@ from sympy.physics.mechanics import dynamicsymbols, find_dynamicsymbols, Referen
 from sympy.physics.vector import init_vprinting
 from sympy.printing.theanocode import theano_function
 from scipy.integrate import odeint, solve_ivp
+from scipy import interpolate
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from matplotlib import animation
+from matplotlib import animation, tri
 import datetime
 import numpy as np
 import time
@@ -27,9 +28,10 @@ from tqdm import tqdm
 import configparser
 import os
 import dill
+import json
 
-from .utilities.functions import step5
-
+from .utilities.functions import step5, generateWheelsPoints, findContinguousContactRegions
+from .src.friction import Friction
 
 
 
@@ -55,10 +57,15 @@ class RoverSimulator:
         self.lambdified_points_acc = list()
         
         self.lambdified_partial_velocities = dict()
+        
+        self.contact_parametric = dict()
+        self.friction = None
               
         
         self.bodies = list()
         self.torques = list()
+        self.__driving_torques = list()
+        self.__current_driving_torque = None
         
         
         if config_path is None:
@@ -110,6 +117,11 @@ class RoverSimulator:
         self.__reaction_torque = list()
         
         self.__map = dict()
+        
+        self.__wheel_points = None
+        
+        self.ground_new = None
+        self.__ground_interpolator = None
         
         
         
@@ -190,10 +202,18 @@ class RoverSimulator:
         
         
         if self.__config_found:
+            
+            #Load rover body properties
+            
             rover_mass = self.config.getfloat('Model Description','rover_mass')
             rover_inertia_x = self.config.getfloat('Model Description','rover_inertia_xx')
             rover_inertia_y = self.config.getfloat('Model Description','rover_inertia_yy')
             rover_inertia_z = self.config.getfloat('Model Description','rover_inertia_zz')
+            rover_inertia_xy =self.config.getfloat('Model Description', 'rover_inertia_xy')
+            rover_inertia_xz =self.config.getfloat('Model Description', 'rover_inertia_xz')
+            rover_inertia_yz =self.config.getfloat('Model Description', 'rover_inertia_yz')
+            
+            # Load bogie parameters
             d_h = self.config.getfloat('Model Description','arm_offset')
             off_swing_dst = self.config.getfloat('Model Description','arm_cm_distance')
             l_link = self.config.getfloat('Model Description','link_lenght')
@@ -206,7 +226,10 @@ class RoverSimulator:
             swing_arm_i_xy = self.config.getfloat('Model Description','swing_arm_inertia_xy')
             swing_arm_i_xz = self.config.getfloat('Model Description','swing_arm_inertia_xz')
             swing_arm_i_yz = self.config.getfloat('Model Description','swing_arm_inertia_yz')
-            d_CM_link = self.config.getfloat('Model Description','link_cm_dist')
+            
+            
+            # Load central link parameters
+            d_CM_link_x = self.config.getfloat('Model Description','link_cm_dist')
             mass_link = self.config.getfloat('Model Description','link_mass')
             link_inertia_xx = self.config.getfloat('Model Description','link_inertia_xx')
             link_inertia_yy = self.config.getfloat('Model Description','link_inertia_yy')
@@ -1005,6 +1028,62 @@ class RoverSimulator:
         
         
         
+        # Insert 4 Parametric points which lies inside the surface of the wheel. Tpo do this we need to
+        # define other four reference frames which are the frames of the contact point
+        
+        
+        #We define now 4 parametric points
+        a1,a2,a3,a4 = symbols('a_1, a_2, a_3, a_4')
+        rho1,rho2,rho3,rho4 = symbols('rho1, rho2, rho3, rho4')
+        
+        
+        
+        #FRAMES:
+        frame_par_contact_front_right = ReferenceFrame('R_{par_cont_fr}')
+        frame_par_contact_front_right.orient(front_right_wheel_steer_frame,'Axis', (a1,front_right_wheel_steer_frame.x))
+        
+        frame_par_contact_back_right = ReferenceFrame('R_{par_cont_br}')
+        frame_par_contact_back_right.orient(back_right_wheel_steer_frame,'Axis', (a2, back_right_wheel_steer_frame.x))
+        
+        frame_par_contact_front_left = ReferenceFrame('R_{par_cont_fl}')
+        frame_par_contact_front_left.orient(front_left_wheel_steer_frame,'Axis', (a3, front_left_wheel_steer_frame.x))
+        
+        frame_par_contact_back_left = ReferenceFrame('R_{par_cont_bl}')
+        frame_par_contact_back_left.orient(back_left_wheel_steer_frame,'Axis', (a4, back_left_wheel_steer_frame.x))
+        
+        
+        
+        #CONTACT POINTS:
+        contact_right_front_parametric = front_right_wheel_centre_location.locatenew('P_{contact_right_front_parametric}',\
+                                                                                     -rho1*frame_par_contact_front_right.z)
+        
+        contact_right_back_parametric = back_right_wheel_centre_location.locatenew('P_{contact_right_back_parametric}',\
+                                                                                     -rho2*frame_par_contact_back_right.z)
+        
+        contact_left_front_parametric = front_left_wheel_centre_location.locatenew('P_{contact_left_front_parametric}',\
+                                                                                     -rho3*frame_par_contact_front_left.z)
+            
+        contact_left_back_parametric = back_left_wheel_centre_location.locatenew('P_{contact_left_back_parametric}',\
+                                                                                   -rho4*frame_par_contact_back_left.z)
+        
+        
+        contact_right_front_parametric.v2pt_theory(front_right_wheel_centre_location, inertial_frame, front_right_wheel_frame)
+        contact_right_front_parametric.a2pt_theory(front_right_wheel_centre_location, inertial_frame, front_right_wheel_frame)
+        
+        contact_right_back_parametric.v2pt_theory(back_right_wheel_centre_location, inertial_frame, back_right_wheel_frame)
+        contact_right_back_parametric.a2pt_theory(back_right_wheel_centre_location, inertial_frame, back_right_wheel_frame)
+        
+        contact_left_front_parametric.v2pt_theory(front_left_wheel_centre_location, inertial_frame, front_left_wheel_frame)
+        contact_left_front_parametric.a2pt_theory(front_left_wheel_centre_location, inertial_frame, front_left_wheel_frame)
+        
+        contact_left_back_parametric.v2pt_theory(back_left_wheel_centre_location, inertial_frame, back_left_wheel_frame)
+        contact_left_back_parametric.a2pt_theory(back_left_wheel_centre_location, inertial_frame, back_left_wheel_frame)
+            
+        
+
+        #Define now the point velocities and accelerations
+        
+        
         
 
         self.bodies = [rover_body, right_swing_arm_body, 
@@ -1088,10 +1167,70 @@ class RoverSimulator:
                        ]
         
         
+        self.contact_parametric['points'] = [contact_right_front_parametric,
+                                             contact_right_back_parametric,
+                                             contact_left_front_parametric,
+                                             contact_left_back_parametric]
+        
+        self.contact_parametric['frames'] = [frame_par_contact_front_right,
+                                             frame_par_contact_back_right,
+                                             frame_par_contact_front_left,
+                                             frame_par_contact_back_left]
         
         
+        self.contact_parametric['variables'] = list(zip([rho1, rho2, rho3, rho4], [a1, a2, a3, a4]))
         
         
+        self.__createWheel()
+        ground_pts = self.loadGroundPoints()
+        ground_pts1 = np.array((ground_pts['x'],ground_pts['y'], ground_pts['z'])).T
+        self.__ground_new = ground_pts1
+        
+        X = ground_pts1[:,0].reshape((ground_pts['rows'], ground_pts['columns']))
+        Y = ground_pts1[:,1].reshape((ground_pts['rows'], ground_pts['columns']))
+        Z = ground_pts1[:,2].reshape((ground_pts['rows'], ground_pts['columns']))
+        
+        #self.__ground_interpolator = interpolate.SmoothBivariateSpline(ground_pts[:,0],
+        #                                                               ground_pts[:,1],ground_pts[:,2])
+        
+        self.__ground_interpolator = interpolate.RectBivariateSpline(Y[:,0],X[0,:], Z)
+        
+        steer_torques = list(symbols('TS_:4')) #Steer torque
+        drive_torques = list(symbols('TD_:4')) #Drive torque
+        
+        self.__driving_torques = steer_torques + drive_torques
+        self.__current_driving_torque = np.zeros((len(steer_torques)+len(drive_torques),))
+        
+        
+        steer_frames = ['FRS_f','BRS_f', 'FLS_f', 'BLS_f']
+        wheel_frames = ['FRW_f','BRW_f', 'FLW_f', 'BLW_f']
+        link_frames = ['R_{FR_{i_2}}', 'R_{BR_{I_2}}', 'R_{FL{i_2}}', 'R_{BL_{I_2}}']
+        
+        t = list()
+        
+        for i in range(len(steer_torques)):
+            for j, frame in enumerate(self.frames):
+                if frame.name == steer_frames[i]:
+                    break
+            
+            for p, frame in enumerate(self.frames):
+                if frame.name == wheel_frames[i]:
+                    break
+            for o, frame in enumerate(self.frames):
+                if frame.name == link_frames[i]:
+                    break
+                
+                
+            #Add link frames if action-reaction
+            torque_vec = steer_torques[i]*self.frames[j].z + drive_torques[i]*self.frames[p].x
+            torque_tup = (self.frames[p], torque_vec)
+            torque_tup1 = (self.frames[o], -torque_vec)
+            t.append(torque_tup)
+            #t.append(torque_tup1)
+            
+        self.torques += t
+            
+                    
         
 
 #%% #### Torques Build Up
@@ -1268,8 +1407,93 @@ class RoverSimulator:
             func_list_vel.append(tmp_vel)
             
         self.lambdified_partial_velocities = list(zip(contact_names, point_id, func_list_pos, func_list_vel, func_list))
+        
+        
+    
+        point_id = list()
+        pos_list = list()
+        vel_list = list()
+        func_list = list()
+        vel_projected_list = list()
+        
+        
+        for n in range(len(self.contact_parametric['points'])):
+            point_id.append(self.contact_parametric['points'][n].name)
             
+            
+            tmp_matrix = Matrix()
+            
+            
+            tmp_partial = self.contact_parametric['points'][n].partial_velocity(self.frames[0], *self.gen_speeds)
+            
+            for j in range(len(tmp_partial)):
+                tmp_matrix = tmp_matrix.col_join(tmp_partial[j].express(
+                    self.contact_parametric['frames'][n]).to_matrix(self.contact_parametric['frames'][n]).T)
+            
+            
+            
+            expr_pos = self.contact_parametric['points'][n].pos_from(self.points[0]).to_matrix(self.frames[0]).T #Point position expression
+            expr_vel = self.contact_parametric['points'][n].vel(self.frames[0]).express(self.contact_parametric['frames'][n]).to_matrix(self.frames[0]).T #Velocity expression
+            part_vel_expr = tmp_matrix
+            vel_tmp = self.contact_parametric['points'][n].vel(self.frames[0]).express(self.contact_parametric['frames'][n]) #velocity of point expressed in its frame
+            vel_projected = vel_tmp - vel_tmp.args[0][0][2]*self.contact_parametric['frames'][n].z #In its frame
+            
+            
+            expr_proj_vel = vel_projected.to_matrix(self.contact_parametric['frames'][n])
+            
+            
+            symb = list(self.contact_parametric['variables'][n])
+            
+            if method == 'lambdify':
+                f_p = lambdify(self.gen_coord + symb, expr_pos, "numpy")
+                f_part = lambdify(self.gen_coord + symb, part_vel_expr, "numpy")
+                tmp_coord = self.gen_coord + self.gen_speeds
                 
+                f_v = lambdify(tmp_coord + symb, expr_vel, "numpy")
+                f_v_proj = lambdify(tmp_coord + symb, expr_proj_vel, "numpy")
+            elif method == 'theano':
+                f_p = theano_function(self.gen_coord + symb, [expr_pos], on_unused_input='ignore')
+                f_part = theano_function(self.gen_coord+ symb, [part_vel_expr], on_unused_input='ignore')
+                tmp_coord = self.gen_coord + self.gen_speeds
+                
+                f_v = theano_function(tmp_coord + symb, [expr_vel], on_unused_input='ignore')
+                f_v_proj = theano_function(tmp_coord + symb, [expr_proj_vel], on_unused_input='ignore')
+            elif method == 'autowrap - f2py':
+                f_p = autowrap(msubs(expr_pos, self.__map['simplyfied']['mapping']['gen-coords']),\
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-coords'] +symb, backend = 'f2py')
+                    
+                f_part = autowrap(msubs(part_vel_expr, self.__map['simplyfied']['mapping']['gen-coords']),\
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-coords'] +symb, backend = 'f2py')
+                    
+                f_v = autowrap(msubs(expr_vel, self.__map['simplyfied']['mapping']['gen-merged']),\
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-merged'] +symb, backend = 'f2py')
+                    
+                f_v_proj = autowrap(msubs(expr_proj_vel, self.__map['simplyfied']['mapping']['gen-merged']),\
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs gen-merged'] +symb, backend = 'f2py')
+                    
+            else:
+                f_p = autowrap(msubs(expr_pos, self.__map['dummyfied']['mapping']['gen-coords']),\
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-coords']+symb, backend = 'cython')
+                    
+                f_part = autowrap(msubs(part_vel_expr, self.__map['dummyfied']['mapping']['gen-coords']),\
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-coords']+symb, backend = 'cython')
+                    
+                f_v = autowrap(msubs(expr_vel, self.__map['dummyfied']['mapping']['gen-merged']),\
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-merged']+symb, backend = 'cython')
+                    
+                f_v_proj = autowrap(msubs(expr_proj_vel, self.__map['dummyfied']['mapping']['gen-merged']),\
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs gen-merged']+symb, backend = 'cython')
+            
+            
+            
+            
+            pos_list.append(f_p)
+            func_list.append(f_part)
+            vel_list.append(f_v)
+            vel_projected_list.append(f_v_proj)
+            
+        self.contact_parametric['lambda'] = list(zip(point_id,pos_list,vel_list, func_list, vel_projected_list))
+            
         
     
     
@@ -1392,19 +1616,19 @@ class RoverSimulator:
             
             if method == 'lambdify':
                 print('lambda')
-                self.kane_method['lambda func']['forcing vector full'] = lambdify(tmp_coord, \
+                self.kane_method['lambda func']['forcing vector full'] = lambdify(tmp_coord + self.__driving_torques, \
                                                                       expr, "numpy")
             elif method == 'theano':
                 print('theano')
-                self.kane_method['lambda func']['forcing vector full'] = theano_function(tmp_coord, [expr])
+                self.kane_method['lambda func']['forcing vector full'] = theano_function(tmp_coord + self.__driving_torques, [expr])
             elif method == 'autowrap - f2py':
                 print('fortran')
                 self.kane_method['lambda func']['forcing vector full'] = autowrap(msubs(expr, self.__map['simplyfied']['mapping']['gen-merged']),\
-                             tempdir=save_dir, args=self.__map['simplyfied']['subs merged'], backend = 'f2py')
+                             tempdir=save_dir, args=self.__map['simplyfied']['subs merged'] + self.__driving_torques, backend = 'f2py')
             else:
                 print('cython')
                 self.kane_method['lambda func']['forcing vector full'] = autowrap(msubs(expr, self.__map['dummyfied']['mapping']['gen-merged']),\
-                             tempdir=save_dir, args=self.__map['dummyfied']['subs merged'], backend = 'cython')
+                             tempdir=save_dir, args=self.__map['dummyfied']['subs merged'] + self.__driving_torques, backend = 'cython')
                 
             print('Done.')
                 
@@ -1512,12 +1736,12 @@ class RoverSimulator:
         self.__ax.set_xlabel('x [m]')
         self.__ax.set_ylabel('y [m]')
         self.__ax.set_zlabel('z [m]')
-        self.__ax.set_ylim(3,7)
-        self.__ax.set_xlim(3,7)
+        self.__ax.set_ylim(-2,2)
+        self.__ax.set_xlim(-2,2)
         self.__ax.set_zlim(-2,2)
         self.__ax.set_title('Rover initial configuration')
         self.__ax.view_init(0, 180)
-        self.__ax.dist = 4
+        self.__ax.dist = 7
         self.__ax.plot(leg_right_to_plot[:,0],leg_right_to_plot[:,1],leg_right_to_plot[:,2],'-or')
         self.__ax.plot(leg_left_to_plot[:,0],leg_left_to_plot[:,1],leg_left_to_plot[:,2],'-or')
         self.__ax.plot(rod[:,0], rod[:,1], rod[:,2],'-g')
@@ -1723,9 +1947,9 @@ class RoverSimulator:
             
             if self.method == 'Kane':
                 Mass_full = self.kane_method['lambda func']['mass matrix full'](*self.current_gen_coord)
-                forcing_full = self.kane_method['lambda func']['forcing vector full'](*np.hstack((self.current_gen_coord, self.current_gen_speed)))
+                forcing_full = self.kane_method['lambda func']['forcing vector full'](*np.hstack((self.current_gen_coord, self.current_gen_speed, self.__current_driving_torque)))
                 
-                _, F = self.__checkWheelContact()
+                _, F = self.__checkWheelContact2()
                 
                 forcing_full += np.vstack((np.zeros((len(self.gen_coord),1)), F))
                 
@@ -1740,6 +1964,7 @@ class RoverSimulator:
         
         
         print('Solving ODE')
+        print('DIOCANE')
         if integrator == 'odeint':
             
             stiff_order = self.config.get('Simulator','max stiff order')
@@ -1766,7 +1991,7 @@ class RoverSimulator:
             
             
             self.ode_sol = odeint(right_hand_side,np.hstack((self.current_gen_coord, self.current_gen_speed)),\
-                                  time_sim, tfirst = True, mxords=stiff_order, mxordn=non_stiff_order, hmin=min_time_step)
+                                  time_sim, tfirst = True, full_output = 1)#, mxords=stiff_order, mxordn=non_stiff_order, hmin=min_time_step)
             
         elif integrator == 'Euler-Explicit':
             for t in tqdm(time_sim, desc='Solving ODEs with Euler-Explicit Scheme'):
@@ -1792,7 +2017,7 @@ class RoverSimulator:
     
     def __checkWheelContact(self):
         mask = np.zeros((len(self.lambdified_partial_velocities),), dtype = bool)
-        deltas = np.zeros((len(self.lambdified_partial_velocities),))
+        #deltas = np.zeros((len(self.lambdified_partial_velocities),))
         
         k = self.config.getfloat('Ground Properties', 'stiffness')
         c_max = self.config.getfloat('Ground Properties', 'damping')
@@ -1830,6 +2055,110 @@ class RoverSimulator:
         
         
         return mask, F
+    
+    
+    
+    def __checkWheelContact2(self):
+        mask = None
+        k = self.config.getfloat('Ground Properties', 'stiffness')
+        c_max = self.config.getfloat('Ground Properties', 'damping')
+        d = self.config.getfloat('Ground Properties', 'exp')
+        p_max = self.config.getfloat('Ground Properties','max depth')
+        wheel_radius = self.config.getfloat('Model Description','wheel_radius')
+        
+        F = np.zeros((len(self.gen_speeds),1))
+        
+        
+        frame_names = ['FRS_f','BRS_f', 'FLS_f', 'BLS_f']
+        wheel_centre_pt_names = ['P_{wfr}', 'P_{wbr}', 'P_{wfl}', 'P_{wbl}']
+            
+            
+        iterable_var = list(zip(frame_names, wheel_centre_pt_names))
+        wheel_pts = self.getWheelPoints()
+        
+        for i in range(len(iterable_var)):
+                for n, frame in enumerate(self.frames):
+                    if frame.name == iterable_var[i][0]:
+                        break
+                
+                rot_matrix = self.lambdified_frames[n](*self.current_gen_coord)
+                RW_rotated = np.dot(rot_matrix.T, wheel_pts.T)
+                
+                for n, point in enumerate(self.points):
+                    if point.name == iterable_var[i][1]:
+                        break
+                
+                translation = self.lambdified_points[n](*self.current_gen_coord)
+                
+                RW_to_plot = RW_rotated.T + translation
+                
+                #z_interp = interpolate.griddata((self.__ground_new[:,0],self.__ground_new[:,1]), self.__ground_new[:,2], RW_to_plot[:,:2],method='cubic')
+                
+                z_interp = self.__ground_interpolator(RW_to_plot[:,1],RW_to_plot[:,0], grid=False)
+                
+                
+                if np.any(RW_to_plot[:,-1] < z_interp):
+                    #There is contact!
+                    
+                    #Detect groups of contact
+                    mask = RW_to_plot[:,-1] < z_interp
+                    
+                    
+                    regions = findContinguousContactRegions(mask)
+                    
+                    for region in regions:
+                        x_cm = np.mean(RW_to_plot[region,0])
+                        y_cm = np.mean(RW_to_plot[region,1])
+                        z_cm = np.mean(RW_to_plot[region,2])
+                        
+                        v = np.array([x_cm,y_cm,z_cm])
+                        v_t = v -translation
+                        v_rot = rot_matrix.dot(v_t.T)
+                        
+                        rho = np.sqrt(v_rot[1]**2 + v_rot[2]**2)[0]
+                        a = np.arctan(v_rot[1]/np.abs(v_rot[2]))[0]
+                        
+                        #print(rho)
+                        #print(a)
+                        
+                        delta = wheel_radius - rho
+                        
+                        c = step5(delta, 0, 0, p_max, c_max)
+                        
+                        F_k_wheel = np.array([[0,0,k*delta**d]])
+                        
+                        sym = np.array([rho,a])
+                        
+                        partial = self.contact_parametric['lambda'][i][3](*np.hstack((self.current_gen_coord, sym)))
+                        vel = self.contact_parametric['lambda'][i][2](*np.hstack((self.current_gen_coord, self.current_gen_speed, sym)))
+                        F_d_wheel = -c*vel
+                        
+                        F_d_wheel[0,:2] = 0 #Check
+                        
+                        F += np.dot(partial, F_d_wheel.T) + np.dot(partial, F_k_wheel.T)
+                        
+                        #Add Friction component
+                        
+                        v_f = vel[0,:2]
+                        
+                        v_norm = np.sqrt(v_f[0]**2 + v_f[1]**2) #Vector norm
+                        
+                        mu = self.friction.computeFrictionCoeffiecient(v_norm)
+                        #mu/=5
+                        #mu=0.1
+                        #print(mu)
+                        #print(mu)
+                        F_friction = -mu*(F_k_wheel[0,-1])# + F_d_wheel[0,-1]) #Modulus
+                        #F_friction = -mu*10
+                        F_fr_vec = np.hstack((F_friction*v_f/v_norm, [0]))
+                        #print(F_fr_vec)
+                        
+                        F += np.dot(partial, np.array([F_fr_vec]).T)
+                        
+                        
+                    
+                
+        return mask, F        
                 
             
              
@@ -1934,6 +2263,10 @@ class RoverSimulator:
         """
         return self.__map
         
+    
+    def getCurrentState(self):
+        tmp = np.array([self.current_gen_coord, self.current_gen_speed]).T
+        return tmp
         
         
         
@@ -2001,13 +2334,32 @@ class RoverSimulator:
         ax.view_init(0, 180)
         ax.dist = 7
         
+# =============================================================================
+#         surf = None
+#         if self.__ground['coeffs']:
+#             X,Y = np.meshgrid([x_min, x_max],[y_min, y_max])
+#             Z = self.__ground['coeffs']['a']*X + self.__ground['coeffs']['b']*Y + self.__ground['coeffs']['c']
+#             
+#             surf = ax.plot_surface(X,Y,Z, alpha=0.5)
+# =============================================================================
         surf = None
-        if self.__ground['coeffs']:
-            X,Y = np.meshgrid([x_min, x_max],[y_min, y_max])
-            Z = self.__ground['coeffs']['a']*X + self.__ground['coeffs']['b']*Y + self.__ground['coeffs']['c']
+        if self.__ground_new is not None:
+            # x_min = self.__ground_new[:,0].min()
+            # x_max = self.__ground_new[:,0].max()
+            x_domain = np.linspace(x_min, x_max, 1000)
             
+            # y_min = self.__ground_new[:,1].min()
+            # y_max = self.__ground_new[:,1].max()
+            
+            y_domain = np.linspace(y_min, y_max, 1000)
+            X,Y = np.meshgrid(x_domain, y_domain)
+            
+            Z = interpolate.griddata(self.__ground_new[:,:2], self.__ground_new[:,2], (X,Y),method='cubic')
+
             surf = ax.plot_surface(X,Y,Z, alpha=0.5)
-        
+            
+            # dt = tri.Triangulation(self.__ground_new[:,0],self.__ground_new[:,1])
+            # surf = ax.plot_trisurf(self.__ground_new[:,0], self.__ground_new[:,1], self.__ground_new[:,2], triangles = dt.triangles, alpha=0.1)
         
         
         time_text = ax.text2D(0.04,0.9,'', transform=ax.transAxes)
@@ -2219,6 +2571,124 @@ class RoverSimulator:
     def loadModel(self, filename):
         print('TO DO')
         
+    
+    
+    def changeTerrain(self, terrain_type = 'flat_ground'):
+        data = self.loadGroundPoints(default_type = terrain_type)
+        
+        ground_pts = np.array((data['x'],data['y'], data['z'])).T
+        self.__ground_new = ground_pts
+        
+        
+        #self.__ground_interpolator = interpolate.SmoothBivariateSpline(ground_pts[0:-1:10,0],
+        #                                                               ground_pts[0:-1:10,1],ground_pts[0:-1:10,2])
+        
+        X = ground_pts[:,0].reshape((data['rows'], data['columns']))
+        Y = ground_pts[:,1].reshape((data['rows'], data['columns']))
+        Z = ground_pts[:,2].reshape((data['rows'], data['columns']))
+        
+        
+        self.__ground_interpolator = interpolate.RectBivariateSpline(Y[:,0], X[0,:], Z)
+        
+    def showTerrain(self, samples = 1000):
+        x_min = self.__ground_new[:,0].min()
+        x_max = self.__ground_new[:,0].max()
+        
+        y_min = self.__ground_new[:,1].min()
+        y_max = self.__ground_new[:,1].max()
+        
+        x = np.linspace(x_min, x_max, samples)
+        y = np.linspace(y_min, y_max, samples)
+        
+        X,Y = np.meshgrid(x,y)
+        
+        Z = interpolate.griddata(self.__ground_new[:,:2], self.__ground_new[:,2], (X,Y),method='cubic')
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection = '3d')
+        ax.plot_surface(X,Y,Z, alpha = 0.5)
+        plt.show()
+        
+        
+    
+    def loadGroundPoints(self, filename = None, default_type = 'flat_ground'):
+        if filename is not None:
+            try:
+                with open(filename,'r') as f:
+                    data = json.load(f)
+            except:
+                print('Couldnt load specified data file')
+        else:
+            cur_file_path = os.path.dirname(__file__)
+            filename = os.path.join(cur_file_path,'data','ground',default_type+'.json')
+            with open(filename,'r') as f:
+                data = json.load(f)
+        
+        return data
+        
+        
+    def __createWheel(self):
+        radius = self.config.getfloat('Model Description','wheel_radius')
+        angles = np.arange(-np.pi/2,np.pi/2,np.deg2rad(1))
+        
+        wheel = generateWheelsPoints(radius, angles)
+        wheel[:,-1] = -wheel[:,-1]
+        
+        self.__wheel_points = wheel
+        
+    
+    def getWheelPoints(self):
+        return self.__wheel_points
+    
+    def getGroundPoints(self):
+        return self.__ground_new
+    
+    
+    def setSteerTorques(self, t_fr, t_br, t_fl, t_bl):
+        t = [t_fr, t_br, t_fl, t_bl]
+        self.__current_driving_torque[:4] = t
+        
+    def setDrivingTorque(self, t_fr, t_br, t_fl, t_bl):
+        t = [t_fr, t_br, t_fl, t_bl]
+        self.__current_driving_torque[4:] = t
+        
+    def getSteerTorques(self):
+        return self.__current_driving_torque[:4]
+    
+    def getDriveTorques(self):
+        return self.__current_driving_torque[4:]
+    
+    
+    def loadFrictionModel(self):
+        
+        self.friction = Friction()
+        g = 6*[0]
+        if self.config.getboolean('Friction Properties','load_model'):
+            g[0] = self.config.getfloat('Friction Properties','g1')
+            g[1] = self.config.getfloat('Friction Properties','g2')
+            g[2] = self.config.getfloat('Friction Properties','g3')
+            g[3] = self.config.getfloat('Friction Properties','g4')
+            g[4] = self.config.getfloat('Friction Properties','g5')
+            g[5] = self.config.getfloat('Friction Properties','g6')
+            
+        self.friction.setCoeffiecients(*g)
+        
+        
+    def getFrictionModel(self):
+        return self.friction
+    
+    
+    
+        
+        
+        
+        
+    
+    
+        
+        
+        
+        
         
     def __copy__(self):
         cls = self.__class__
@@ -2243,8 +2713,8 @@ class RoverSimulator:
 if __name__ == '__main__':
     sim = RoverSimulator()
     sim.initialize()
-    sim.lambdifyAll('lambdify')
-    print(os.path.dirname(__file__))
+    #sim.lambdifyAll('lambdify')
+    #print(os.path.dirname(__file__))
     # sim.formEquationsOfMotion('autowrap - f2py')
     # gen_coord = 15*[0]
     # gen_coord[:3] = 3*[0]
