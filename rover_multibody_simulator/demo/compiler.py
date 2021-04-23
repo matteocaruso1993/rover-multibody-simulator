@@ -11,7 +11,7 @@ def main():
     sim = RoverSimulator()
     sim.initialize()
     sim.lambdifyAll('autowrap - cython')
-    sim.formEquationsOfMotion('autowrap - f2py')
+    sim.formEquationsOfMotion('autowrap - cython')
     sim.saveLambdaFunctions('full-parametric-model')
     
 
