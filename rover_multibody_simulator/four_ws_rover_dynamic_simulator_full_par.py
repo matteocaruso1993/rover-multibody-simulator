@@ -33,11 +33,7 @@ import importlib
 import json
 import math
 
-<<<<<<< HEAD
 from numba import jit
-
-=======
->>>>>>> b6d4c17251816852f4d7e9bf65d38a15bd77234e
 
 from .utilities.functions import step5, generateWheelsPoints, findContinguousContactRegions
 from .src.friction import Friction
@@ -2078,12 +2074,7 @@ class RoverSimulator:
         right_vector = np.zeros((len(self.gen_coord) + len(self.gen_speeds), 1))
         
         
-        #corr = np.zeros((8,))
-<<<<<<< HEAD
-        
-        
-=======
->>>>>>> b6d4c17251816852f4d7e9bf65d38a15bd77234e
+
         def right_hand_side(t, x):
             
             
@@ -3009,15 +3000,11 @@ class RoverSimulator:
             cloudpickle.dump(self.kane_method['lambda func'], f)
             
         
-<<<<<<< HEAD
-        #Save current
+        #Save current config file since it may be different
         with open(os.os.path.join(path_to_save, 'config.ini'), 'w') as configfile:
             self.config.write(configfile)
             
-        
-=======
->>>>>>> b6d4c17251816852f4d7e9bf65d38a15bd77234e
-        
+            
     def loadLambdaFunctions(self, folder_name = None, model_name='', wrapper_folder = 'data/wrappers'):
         # Load all the modules in the folder
         if folder_name is None:
@@ -3029,20 +3016,13 @@ class RoverSimulator:
         
         #It is important to load first the wrapper modules
         #wrapper_folder = wrapper_folder.replace('/', '.')
-<<<<<<< HEAD
-        print(dir())
-=======
->>>>>>> b6d4c17251816852f4d7e9bf65d38a15bd77234e
-        
+
         self.__ext_modules = list()
         
         curr_wd = os.getcwd()
         os.chdir(os.path.join(curr_wd, *wrapper_folder.split('/')))
-<<<<<<< HEAD
+
         print('Attempting to load wrapper modules from: ' + os.getcwd())
-=======
-        print(os.getcwd())
->>>>>>> b6d4c17251816852f4d7e9bf65d38a15bd77234e
         
         
         for i in range(1000):
@@ -3094,17 +3074,14 @@ class RoverSimulator:
             self.kane_method['lambda func'] = cloudpickle.load(f)
             
             
-<<<<<<< HEAD
+
         self.config_path = os.path.join(path_to_load,'config.ini')
         if not self.__config_found:
             raise RuntimeError('Unable to lacate and load specified config file at location: ' + os.path.join(path_to_load,'config.ini' ))
         self.loadConfig()
         self.initialize()
         
-            
-            
-=======
->>>>>>> b6d4c17251816852f4d7e9bf65d38a15bd77234e
+
     
     def _createParamMapping(self):
         #Create parameter mapping
