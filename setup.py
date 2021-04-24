@@ -20,7 +20,7 @@ setup(name='rover_multibody_simulator',
       license="GPLv3",
       packages=find_packages(),
       package_data = {'rover_multibody_simulator': ['data/config/config.ini','data/video/*.mp4','data/ground/*.json', 'data/model/*.pickle']},
-      install_requires=['sympy','scipy', 'tqdm', 'numpy','matplotlib','dill', 'configparser', 'cloudpickle','jsons','importlib','geneticalgorithm', 'Cython'],
+      install_requires=['sympy','scipy', 'tqdm', 'numpy','matplotlib','dill', 'configparser', 'cloudpickle','jsons','importlib','geneticalgorithm', 'numba', 'Cython'],
       zip_safe=False,
       include_package_data=True,
       python_requires='>=3.6'
