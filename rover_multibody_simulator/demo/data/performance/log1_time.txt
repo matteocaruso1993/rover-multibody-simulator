@@ -1,0 +1,630 @@
+Wed Apr 21 23:42:37 2021    log1.txt
+
+         62394416 function calls (59451042 primitive calls) in 245.476 seconds
+
+   Ordered by: cumulative time
+
+   ncalls  tottime  percall  cumtime  percall filename:lineno(function)
+        2    0.000    0.000  243.367  121.683 interactiveshell.py:3396(run_code)
+        2    0.000    0.000  243.367  121.683 {built-in method builtins.exec}
+        1    0.000    0.000  243.367  243.367 <ipython-input-116-0da72ea038e6>:2(<module>)
+        1    0.000    0.000  243.367  243.367 four_ws_rover_dynamic_simulator_full_par.py:2028(simulate)
+        1    0.077    0.077  243.367  243.367 ivp.py:156(solve_ivp)
+    13402    0.084    0.000  243.222    0.018 base.py:159(step)
+    13402    0.755    0.000  243.138    0.018 rk.py:111(_step_impl)
+    19228    1.155    0.000  241.525    0.013 rk.py:14(rk_step)
+    57686    0.194    0.000  240.128    0.004 base.py:136(fun)
+    57686    0.375    0.000  239.935    0.004 base.py:19(fun_wrapped)
+    57686    4.953    0.000  239.429    0.004 four_ws_rover_dynamic_simulator_full_par.py:2063(right_hand_side)
+    57686   55.684    0.001  176.561    0.003 four_ws_rover_dynamic_simulator_full_par.py:2209(__checkWheelContact2)
+5954167/3299292   13.060    0.000   63.718    0.000 {built-in method numpy.core._multiarray_umath.implement_array_function}
+  1260135    1.421    0.000   36.070    0.000 <__array_function__ internals>:2(hstack)
+    57686   33.289    0.001   33.289    0.001 {wrapper_module_141.autofunc_c}
+  1260135    3.237    0.000   31.178    0.000 shape_base.py:286(hstack)
+  1260135    1.236    0.000   20.996    0.000 <__array_function__ internals>:2(atleast_1d)
+  1260135    4.555    0.000   18.524    0.000 shape_base.py:24(atleast_1d)
+  5637431   15.592    0.000   15.592    0.000 {built-in method numpy.array}
+   683076    0.785    0.000   14.343    0.000 <__array_function__ internals>:2(mean)
+  4130569    1.888    0.000   13.934    0.000 _asarray.py:86(asanyarray)
+   230744   12.497    0.000   13.600    0.000 fitpack2.py:860(__call__)
+   227812   12.523    0.000   13.106    0.000 functions.py:62(findContinguousContactRegions)
+   683076    1.845    0.000   12.789    0.000 fromnumeric.py:3269(mean)
+   683076    4.140    0.000   10.944    0.000 _methods.py:143(_mean)
+    57686   10.345    0.000   10.345    0.000 {wrapper_module_140.autofunc_c}
+    57686    0.112    0.000    8.630    0.000 <__array_function__ internals>:2(inv)
+    57686    7.336    0.000    8.401    0.000 linalg.py:477(inv)
+   288430    0.716    0.000    7.671    0.000 configparser.py:821(getfloat)
+  1317822    1.329    0.000    6.968    0.000 <__array_function__ internals>:2(concatenate)
+   288430    0.654    0.000    6.955    0.000 configparser.py:805(_get_conv)
+   288430    0.777    0.000    6.301    0.000 configparser.py:802(_get)
+  1009963    1.097    0.000    5.656    0.000 <__array_function__ internals>:2(dot)
+576862/288431    1.330    0.000    5.524    0.000 configparser.py:765(get)
+   913821    4.293    0.000    4.293    0.000 {method 'reduce' of 'numpy.ufunc' objects}
+   230745    0.334    0.000    4.071    0.000 <__array_function__ internals>:2(any)
+   230745    0.517    0.000    3.391    0.000 fromnumeric.py:2249(any)
+   227692    2.937    0.000    3.027    0.000 friction.py:51(computeFrictionCoeffiecient)
+   230745    0.969    0.000    2.874    0.000 fromnumeric.py:70(_wrapreduction)
+   288431    0.382    0.000    2.841    0.000 configparser.py:393(before_get)
+    56923    2.592    0.000    2.592    0.000 {wrapper_module_126.autofunc_c}
+    56923    2.554    0.000    2.554    0.000 {wrapper_module_138.autofunc_c}
+    56923    2.547    0.000    2.547    0.000 {wrapper_module_130.autofunc_c}
+   683076    2.055    0.000    2.538    0.000 _methods.py:59(_count_reduce_items)
+    56923    2.486    0.000    2.486    0.000 {wrapper_module_134.autofunc_c}
+   288431    0.752    0.000    2.392    0.000 configparser.py:406(_interpolate_some)
+  1317822    0.820    0.000    2.239    0.000 shape_base.py:219(_vhstack_dispatcher)
+        8    0.000    0.000    2.097    0.262 base_events.py:1784(_run_once)
+    56923    1.818    0.000    1.818    0.000 {wrapper_module_125.autofunc_c}
+    56923    1.490    0.000    1.490    0.000 {wrapper_module_137.autofunc_c}
+    56923    1.487    0.000    1.487    0.000 {wrapper_module_129.autofunc_c}
+    56923    1.451    0.000    1.451    0.000 {wrapper_module_133.autofunc_c}
+  1317822    0.716    0.000    1.419    0.000 shape_base.py:208(_arrays_for_stack_dispatcher)
+   576862    0.930    0.000    1.354    0.000 configparser.py:1139(_unify_values)
+  7134505    1.257    0.000    1.257    0.000 {method 'append' of 'list' objects}
+    57687    0.074    0.000    1.244    0.000 <__array_function__ internals>:2(vstack)
+    54/27    0.000    0.000    1.108    0.041 {method 'run' of 'Context' objects}
+       25    0.000    0.000    1.098    0.044 events.py:79(_run)
+       16    0.000    0.000    1.097    0.069 ioloop.py:733(_run_callback)
+   285378    1.035    0.000    1.035    0.000 {method 'dot' of 'numpy.ndarray' objects}
+  2003301    1.021    0.000    1.021    0.000 {built-in method builtins.hasattr}
+    57687    0.160    0.000    1.012    0.000 shape_base.py:223(vstack)
+        8    0.000    0.000    0.999    0.125 selectors.py:319(select)
+        8    0.000    0.000    0.999    0.125 selectors.py:313(_select)
+        8    0.999    0.125    0.999    0.125 {built-in method select.select}
+    57686    0.989    0.000    0.989    0.000 {wrapper_module_8.autofunc_c}
+        2    0.000    0.000    0.976    0.488 kernelbase.py:302(advance_eventloop)
+        2    0.000    0.000    0.976    0.488 eventloops.py:127(loop_qt5)
+        2    0.000    0.000    0.976    0.488 eventloops.py:110(loop_qt4)
+        2    0.000    0.000    0.976    0.488 eventloops.py:98(_loop_qt)
+        2    0.974    0.487    0.976    0.488 {built-in method exec_}
+    57686    0.896    0.000    0.896    0.000 {wrapper_module_19.autofunc_c}
+   576862    0.883    0.000    0.883    0.000 __init__.py:892(__getitem__)
+    57686    0.878    0.000    0.878    0.000 {wrapper_module_24.autofunc_c}
+    57686    0.865    0.000    0.865    0.000 {wrapper_module_13.autofunc_c}
+    19228    0.099    0.000    0.826    0.000 rk.py:108(_estimate_error_norm)
+    57686    0.820    0.000    0.820    0.000 {wrapper_module_61.autofunc_c}
+    57686    0.751    0.000    0.751    0.000 {wrapper_module_65.autofunc_c}
+  2686960    0.691    0.000    0.692    0.000 {built-in method builtins.isinstance}
+    57686    0.661    0.000    0.661    0.000 {wrapper_module_77.autofunc_c}
+    57686    0.658    0.000    0.658    0.000 {wrapper_module_73.autofunc_c}
+   596093    0.304    0.000    0.658    0.000 _asarray.py:14(asarray)
+    57687    0.078    0.000    0.537    0.000 <__array_function__ internals>:2(atleast_2d)
+    19231    0.106    0.000    0.506    0.000 common.py:59(norm)
+   576862    0.337    0.000    0.492    0.000 configparser.py:874(optionxform)
+   227692    0.473    0.000    0.473    0.000 functions.py:9(step5)
+   576862    0.423    0.000    0.423    0.000 __init__.py:882(__init__)
+    19231    0.033    0.000    0.400    0.000 <__array_function__ internals>:2(norm)
+    57687    0.241    0.000    0.396    0.000 shape_base.py:82(atleast_2d)
+    57686    0.226    0.000    0.393    0.000 linalg.py:135(_commonType)
+  2062488    0.392    0.000    0.392    0.000 {built-in method builtins.len}
+  1577675    0.382    0.000    0.382    0.000 {built-in method builtins.issubclass}
+   230744    0.353    0.000    0.353    0.000 {method 'reshape' of 'numpy.ndarray' objects}
+   683076    0.333    0.000    0.333    0.000 {built-in method numpy.core._multiarray_umath.normalize_axis_index}
+   480719    0.331    0.000    0.331    0.000 {method 'ravel' of 'numpy.ndarray' objects}
+    19231    0.168    0.000    0.329    0.000 linalg.py:2363(norm)
+  1317822    0.317    0.000    0.317    0.000 multiarray.py:143(concatenate)
+  1009963    0.266    0.000    0.266    0.000 multiarray.py:706(dot)
+  1260135    0.233    0.000    0.233    0.000 shape_base.py:20(_atleast_1d_dispatcher)
+   115768    0.226    0.000    0.226    0.000 {built-in method numpy.zeros}
+    19228    0.134    0.000    0.221    0.000 rk.py:105(_estimate_error)
+    57686    0.122    0.000    0.220    0.000 linalg.py:107(_makearray)
+   288431    0.204    0.000    0.204    0.000 {method 'find' of 'str' objects}
+   230745    0.195    0.000    0.195    0.000 fromnumeric.py:71(<dictcomp>)
+    57687    0.178    0.000    0.178    0.000 {method 'astype' of 'numpy.ndarray' objects}
+   683076    0.168    0.000    0.168    0.000 fromnumeric.py:3265(_mean_dispatcher)
+   579114    0.156    0.000    0.156    0.000 {method 'lower' of 'str' objects}
+     11/8    0.000    0.000    0.131    0.016 gen.py:743(run)
+    14/11    0.000    0.000    0.131    0.012 {method 'send' of 'generator' objects}
+   115372    0.129    0.000    0.129    0.000 {method 'tolist' of 'numpy.ndarray' objects}
+        6    0.000    0.000    0.121    0.020 kernelbase.py:225(dispatch_shell)
+        6    0.000    0.000    0.121    0.020 ioloop.py:688(<lambda>)
+        6    0.000    0.000    0.121    0.020 gen.py:811(inner)
+      9/6    0.000    0.000    0.120    0.020 gen.py:205(wrapper)
+        9    0.000    0.000    0.120    0.013 kernelbase.py:351(process_one)
+        2    0.000    0.000    0.115    0.057 kernelbase.py:516(execute_request)
+        1    0.000    0.000    0.105    0.105 ipkernel.py:262(do_execute)
+        1    0.000    0.000    0.105    0.105 zmqshell.py:534(run_cell)
+        1    0.000    0.000    0.105    0.105 interactiveshell.py:2868(run_cell)
+        1    0.000    0.000    0.105    0.105 interactiveshell.py:2902(_run_cell)
+        4    0.000    0.000    0.105    0.026 events.py:81(trigger)
+        1    0.000    0.000    0.105    0.105 async_helpers.py:58(_pseudo_sync_runner)
+        1    0.000    0.000    0.105    0.105 {method 'send' of 'coroutine' objects}
+        1    0.000    0.000    0.105    0.105 interactiveshell.py:2992(run_cell_async)
+        1    0.000    0.000    0.104    0.104 backcall.py:95(adapted)
+        1    0.000    0.000    0.104    0.104 autoreload.py:526(pre_run_cell)
+        1    0.004    0.004    0.104    0.104 autoreload.py:209(check)
+   134603    0.075    0.000    0.100    0.000 linalg.py:112(isComplexType)
+     2281    0.006    0.000    0.100    0.000 autoreload.py:183(filename_and_mtime)
+    57686    0.064    0.000    0.095    0.000 linalg.py:125(_realType)
+   227692    0.091    0.000    0.091    0.000 {method 'values' of 'dict' objects}
+   230765    0.089    0.000    0.089    0.000 {method 'items' of 'dict' objects}
+    57686    0.085    0.000    0.085    0.000 linalg.py:200(_assert_stacked_square)
+     2039    0.081    0.000    0.081    0.000 {built-in method nt.stat}
+    57686    0.079    0.000    0.079    0.000 linalg.py:102(get_linalg_error_extobj)
+   230745    0.069    0.000    0.069    0.000 fromnumeric.py:2245(_any_dispatcher)
+   288476    0.067    0.000    0.067    0.000 {method 'join' of 'str' objects}
+    57686    0.054    0.000    0.054    0.000 linalg.py:194(_assert_stacked_2d)
+    57686    0.049    0.000    0.049    0.000 {method 'squeeze' of 'numpy.ndarray' objects}
+    57686    0.042    0.000    0.042    0.000 four_ws_rover_dynamic_simulator_full_par.py:2830(getWheelPoints)
+    60004    0.039    0.000    0.039    0.000 {built-in method builtins.getattr}
+    60173    0.032    0.000    0.032    0.000 {method 'get' of 'dict' objects}
+    17066    0.024    0.000    0.024    0.000 {built-in method builtins.min}
+    57686    0.024    0.000    0.024    0.000 {method '__array_prepare__' of 'numpy.ndarray' objects}
+    57686    0.024    0.000    0.024    0.000 linalg.py:473(_unary_dispatcher)
+        8    0.000    0.000    0.018    0.002 gen.py:725(__init__)
+      100    0.001    0.000    0.016    0.000 {built-in method builtins.print}
+      200    0.001    0.000    0.015    0.000 iostream.py:386(write)
+    57687    0.015    0.000    0.015    0.000 shape_base.py:78(_atleast_2d_dispatcher)
+      315    0.002    0.000    0.014    0.000 iostream.py:197(schedule)
+      329    0.011    0.000    0.011    0.000 socket.py:432(send)
+     2216    0.002    0.000    0.010    0.000 ntpath.py:203(splitext)
+     8065    0.009    0.000    0.009    0.000 {built-in method builtins.max}
+    19231    0.008    0.000    0.008    0.000 linalg.py:2359(_norm_dispatcher)
+        1    0.008    0.008    0.008    0.008 {built-in method time.sleep}
+     2216    0.004    0.000    0.007    0.000 genericpath.py:121(_splitext)
+        8    0.000    0.000    0.007    0.001 iostream.py:337(flush)
+      360    0.006    0.000    0.006    0.000 {method 'acquire' of '_thread.lock' objects}
+        8    0.000    0.000    0.006    0.001 threading.py:540(wait)
+        8    0.000    0.000    0.006    0.001 threading.py:270(wait)
+        1    0.000    0.000    0.005    0.005 rk.py:85(__init__)
+      200    0.000    0.000    0.004    0.000 iostream.py:323(_schedule_flush)
+       10    0.000    0.000    0.004    0.000 session.py:660(send)
+       10    0.000    0.000    0.003    0.000 zmqstream.py:313(flush)
+       99    0.001    0.000    0.003    0.000 wheel_controller.py:147(computeTorqueCorrection)
+        6    0.000    0.000    0.003    0.000 kernelbase.py:464(_publish_status)
+        3    0.000    0.000    0.002    0.001 session.py:885(deserialize)
+       10    0.000    0.000    0.002    0.000 session.py:601(serialize)
+     6648    0.002    0.000    0.002    0.000 {method 'rfind' of 'str' objects}
+        1    0.000    0.000    0.002    0.002 common.py:64(select_initial_step)
+     24/6    0.000    0.000    0.002    0.000 jsonutil.py:59(extract_dates)
+      323    0.001    0.000    0.002    0.000 threading.py:1071(is_alive)
+       18    0.000    0.000    0.002    0.000 jsonutil.py:44(parse_date)
+        3    0.000    0.000    0.001    0.000 _parser.py:1276(parse)
+        4    0.000    0.000    0.001    0.000 eventloops.py:30(process_stream_events)
+        3    0.000    0.000    0.001    0.000 _parser.py:578(parse)
+       40    0.000    0.000    0.001    0.000 session.py:81(<lambda>)
+      177    0.001    0.000    0.001    0.000 <frozen importlib._bootstrap_external>:365(source_from_cache)
+       40    0.000    0.000    0.001    0.000 jsonapi.py:31(dumps)
+        2    0.000    0.000    0.001    0.001 kernelbase.py:701(is_complete_request)
+        3    0.000    0.000    0.001    0.000 _parser.py:672(_parse)
+       40    0.000    0.000    0.001    0.000 __init__.py:183(dumps)
+       11    0.001    0.000    0.001    0.000 poll.py:77(poll)
+       40    0.000    0.000    0.001    0.000 encoder.py:182(encode)
+        1    0.000    0.000    0.001    0.001 manager.py:102(comm_msg)
+        1    0.000    0.000    0.001    0.001 frontendcomm.py:226(handle_msg)
+      354    0.001    0.000    0.001    0.000 <frozen importlib._bootstrap_external>:68(_path_split)
+        1    0.000    0.000    0.001    0.001 commbase.py:298(_comm_message)
+        1    0.000    0.000    0.001    0.001 commbase.py:335(_handle_remote_call)
+       27    0.000    0.000    0.001    0.000 traitlets.py:595(__set__)
+        1    0.000    0.000    0.001    0.001 ipkernel.py:459(do_is_complete)
+        1    0.000    0.000    0.001    0.001 commbase.py:358(_set_call_return_value)
+        2    0.000    0.000    0.001    0.000 zmqstream.py:495(_handle_send)
+        1    0.000    0.000    0.001    0.001 commbase.py:217(_send_message)
+        1    0.000    0.000    0.001    0.001 inputtransformer2.py:596(check_complete)
+       27    0.000    0.000    0.001    0.000 traitlets.py:577(set)
+       40    0.000    0.000    0.001    0.000 encoder.py:204(iterencode)
+      323    0.000    0.000    0.001    0.000 threading.py:1017(_wait_for_tstate_lock)
+        1    0.000    0.000    0.001    0.001 comm.py:120(send)
+        1    0.000    0.000    0.001    0.001 comm.py:61(_publish_msg)
+       13    0.000    0.000    0.001    0.000 session.py:586(sign)
+        8    0.000    0.000    0.001    0.000 iostream.py:262(send_multipart)
+      361    0.000    0.000    0.001    0.000 traitlets.py:564(__get__)
+        2    0.000    0.000    0.001    0.000 socket.py:493(send_multipart)
+        8    0.000    0.000    0.001    0.000 iostream.py:209(send_multipart)
+        3    0.000    0.000    0.001    0.000 ipkernel.py:143(set_parent)
+        3    0.000    0.000    0.001    0.000 _parser.py:205(split)
+        4    0.000    0.000    0.001    0.000 inputtransformer2.py:468(make_tokens_by_line)
+      200    0.000    0.000    0.001    0.000 iostream.py:310(_is_master_process)
+        3    0.000    0.000    0.001    0.000 kernelbase.py:367(dispatch_queue)
+        3    0.000    0.000    0.001    0.000 inputtransformer2.py:576(do_token_transforms)
+       99    0.001    0.000    0.001    0.000 four_ws_rover_dynamic_simulator_full_par.py:2837(setSteerTorques)
+        2    0.000    0.000    0.001    0.000 interactiveshell.py:3184(transform_cell)
+        3    0.000    0.000    0.001    0.000 inputtransformer2.py:544(do_one_token_transform)
+        1    0.001    0.001    0.001    0.001 autoreload.py:533(post_execute_hook)
+       39    0.000    0.000    0.001    0.000 _parser.py:195(__next__)
+       32    0.000    0.000    0.001    0.000 tokenize.py:429(_tokenize)
+       14    0.000    0.000    0.001    0.000 zmqstream.py:540(_update_handler)
+       12    0.000    0.000    0.000    0.000 zmqstream.py:517(_rebuild_io_state)
+       39    0.000    0.000    0.000    0.000 _parser.py:83(get_token)
+        3    0.000    0.000    0.000    0.000 zmqstream.py:477(_handle_recv)
+       17    0.000    0.000    0.000    0.000 attrsettr.py:38(__getattr__)
+        2    0.000    0.000    0.000    0.000 interactiveshell.py:2949(should_run_async)
+       10    0.000    0.000    0.000    0.000 session.py:567(msg)
+       20    0.000    0.000    0.000    0.000 traitlets.py:1216(_notify_trait)
+        3    0.000    0.000    0.000    0.000 zmqshell.py:573(set_parent)
+       20    0.000    0.000    0.000    0.000 traitlets.py:1225(notify_change)
+     18/4    0.000    0.000    0.000    0.000 jsonutil.py:109(json_clean)
+      315    0.000    0.000    0.000    0.000 iostream.py:93(_event_pipe)
+       12    0.000    0.000    0.000    0.000 session.py:84(<lambda>)
+       20    0.000    0.000    0.000    0.000 traitlets.py:1229(_notify_observers)
+     2393    0.000    0.000    0.000    0.000 {built-in method nt.fspath}
+       12    0.000    0.000    0.000    0.000 jsonapi.py:47(loads)
+        8    0.000    0.000    0.000    0.000 {built-in method builtins.compile}
+       10    0.000    0.000    0.000    0.000 session.py:564(msg_header)
+        3    0.000    0.000    0.000    0.000 zmqstream.py:452(_handle_events)
+       21    0.000    0.000    0.000    0.000 jsonutil.py:84(date_default)
+        2    0.000    0.000    0.000    0.000 inputtransformer2.py:585(transform_cell)
+        6    0.000    0.000    0.000    0.000 _parser.py:881(_parse_numeric_token)
+        5    0.000    0.000    0.000    0.000 zmqstream.py:438(_run_callback)
+       99    0.000    0.000    0.000    0.000 four_ws_rover_dynamic_simulator_full_par.py:2841(setDrivingTorque)
+       14    0.000    0.000    0.000    0.000 gen.py:797(handle_yield)
+      361    0.000    0.000    0.000    0.000 traitlets.py:533(get)
+        3    0.000    0.000    0.000    0.000 kernelbase.py:395(schedule_dispatch)
+        2    0.000    0.000    0.000    0.000 eventloops.py:26(_notify_stream_qt)
+       12    0.000    0.000    0.000    0.000 __init__.py:299(loads)
+       17    0.000    0.000    0.000    0.000 attrsettr.py:61(_get_attr_opt)
+        2    0.000    0.000    0.000    0.000 zmqstream.py:267(send_multipart)
+       22    0.000    0.000    0.000    0.000 base_events.py:709(call_soon)
+       27    0.000    0.000    0.000    0.000 traitlets.py:606(_validate)
+       33    0.000    0.000    0.000    0.000 zmqstream.py:425(sending)
+       21    0.000    0.000    0.000    0.000 {method 'isoformat' of 'datetime.datetime' objects}
+        1    0.000    0.000    0.000    0.000 kernelbase.py:456(_publish_execute_input)
+       14    0.000    0.000    0.000    0.000 functools.py:870(wrapper)
+        6    0.000    0.000    0.000    0.000 signal.py:45(signal)
+        1    0.000    0.000    0.000    0.000 codeop.py:111(compile_command)
+        1    0.000    0.000    0.000    0.000 codeop.py:69(_maybe_compile)
+        3    0.000    0.000    0.000    0.000 kernelbase.py:473(set_parent)
+        1    0.000    0.000    0.000    0.000 asyncio.py:187(_handle_events)
+       12    0.000    0.000    0.000    0.000 decoder.py:332(decode)
+       20    0.000    0.000    0.000    0.000 py3compat.py:19(encode)
+      210    0.000    0.000    0.000    0.000 {built-in method nt.getpid}
+       12    0.000    0.000    0.000    0.000 concurrent.py:173(future_set_result_unless_cancelled)
+        1    0.000    0.000    0.000    0.000 history.py:691(store_inputs)
+        2    0.000    0.000    0.000    0.000 os.py:678(__setitem__)
+       61    0.000    0.000    0.000    0.000 {method 'encode' of 'str' objects}
+        3    0.000    0.000    0.000    0.000 queues.py:209(put_nowait)
+        8    0.000    0.000    0.000    0.000 asyncio.py:221(add_callback)
+       22    0.000    0.000    0.000    0.000 base_events.py:738(_call_soon)
+       14    0.000    0.000    0.000    0.000 zmqstream.py:351(update_flag)
+       33    0.000    0.000    0.000    0.000 queue.py:96(empty)
+       78    0.000    0.000    0.000    0.000 {method 'match' of 're.Pattern' objects}
+        3    0.000    0.000    0.000    0.000 socket.py:540(recv_multipart)
+       13    0.000    0.000    0.000    0.000 hmac.py:98(copy)
+      323    0.000    0.000    0.000    0.000 threading.py:513(is_set)
+        3    0.000    0.000    0.000    0.000 codeop.py:108(_compile)
+        8    0.000    0.000    0.000    0.000 threading.py:505(__init__)
+       24    0.000    0.000    0.000    0.000 tokenize.py:98(_compile)
+       14    0.000    0.000    0.000    0.000 {method 'set_result' of '_asyncio.Future' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method nt.putenv}
+        2    0.000    0.000    0.000    0.000 prefilter.py:314(prefilter_lines)
+        2    0.000    0.000    0.000    0.000 zmqstream.py:530(_add_io_state)
+       10    0.000    0.000    0.000    0.000 session.py:217(msg_header)
+        4    0.000    0.000    0.000    0.000 {method 'connect' of 'PyQt5.QtCore.pyqtBoundSignal' objects}
+        2    0.000    0.000    0.000    0.000 prefilter.py:271(prefilter_line)
+       13    0.000    0.000    0.000    0.000 hmac.py:130(hexdigest)
+        2    0.000    0.000    0.000    0.000 zmqstream.py:548(<lambda>)
+        2    0.000    0.000    0.000    0.000 kernelbase.py:323(schedule_next)
+        3    0.000    0.000    0.000    0.000 zmqshell.py:73(set_parent)
+        3    0.000    0.000    0.000    0.000 kernelbase.py:289(post_handler_hook)
+        7    0.000    0.000    0.000    0.000 kernelbase.py:784(_topic)
+      354    0.000    0.000    0.000    0.000 {method 'rsplit' of 'str' objects}
+        6    0.000    0.000    0.000    0.000 signal.py:25(_int_to_enum)
+      353    0.000    0.000    0.000    0.000 {method 'append' of 'collections.deque' objects}
+       24    0.000    0.000    0.000    0.000 re.py:250(compile)
+        3    0.000    0.000    0.000    0.000 displayhook.py:56(set_parent)
+       41    0.000    0.000    0.000    0.000 abc.py:96(__instancecheck__)
+       11    0.000    0.000    0.000    0.000 session.py:148(utcnow)
+       10    0.000    0.000    0.000    0.000 session.py:511(msg_id)
+        6    0.000    0.000    0.000    0.000 enum.py:283(__call__)
+        2    0.000    0.000    0.000    0.000 async_helpers.py:141(_should_be_async)
+       52    0.000    0.000    0.000    0.000 hmac.py:94(update)
+        2    0.000    0.000    0.000    0.000 ioloop.py:587(call_later)
+       24    0.000    0.000    0.000    0.000 events.py:32(__init__)
+        3    0.000    0.000    0.000    0.000 kernelbase.py:284(pre_handler_hook)
+       20    0.000    0.000    0.000    0.000 {method 'replace' of 'datetime.datetime' objects}
+        1    0.000    0.000    0.000    0.000 interactiveshell.py:3245(run_ast_nodes)
+       24    0.000    0.000    0.000    0.000 re.py:289(_compile)
+       99    0.000    0.000    0.000    0.000 wheel_controller.py:137(getWheelIndexes)
+       39    0.000    0.000    0.000    0.000 {method 'copy' of '_hashlib.HASH' objects}
+       13    0.000    0.000    0.000    0.000 hmac.py:111(_current)
+        7    0.000    0.000    0.000    0.000 py3compat.py:29(cast_bytes)
+       26    0.000    0.000    0.000    0.000 traitlets.py:615(_cross_validate)
+       40    0.000    0.000    0.000    0.000 encoder.py:104(__init__)
+       60    0.000    0.000    0.000    0.000 bunch.py:11(__getattr__)
+        2    0.000    0.000    0.000    0.000 prefilter.py:246(prefilter_line_info)
+       16    0.000    0.000    0.000    0.000 {built-in method _thread.allocate_lock}
+       14    0.000    0.000    0.000    0.000 gen.py:841(convert_yielded)
+        2    0.000    0.000    0.000    0.000 asyncio.py:206(call_at)
+        6    0.000    0.000    0.000    0.000 enum.py:562(__new__)
+        2    0.000    0.000    0.000    0.000 prefilter.py:255(find_handler)
+        8    0.000    0.000    0.000    0.000 threading.py:222(__init__)
+       14    0.000    0.000    0.000    0.000 {method 'add_done_callback' of '_asyncio.Future' objects}
+       41    0.000    0.000    0.000    0.000 {built-in method _abc._abc_instancecheck}
+       20    0.000    0.000    0.000    0.000 cp1252.py:11(encode)
+       93    0.000    0.000    0.000    0.000 _parser.py:214(isnum)
+       14    0.000    0.000    0.000    0.000 functools.py:814(dispatch)
+       65    0.000    0.000    0.000    0.000 {method 'update' of '_hashlib.HASH' objects}
+       11    0.000    0.000    0.000    0.000 gen.py:146(_create_future)
+        2    0.000    0.000    0.000    0.000 queue.py:153(get)
+       11    0.000    0.000    0.000    0.000 poll.py:28(register)
+        3    0.000    0.000    0.000    0.000 queues.py:225(get)
+       12    0.000    0.000    0.000    0.000 decoder.py:343(raw_decode)
+        9    0.000    0.000    0.000    0.000 _parser.py:434(append)
+        9    0.000    0.000    0.000    0.000 _parser.py:1147(_to_decimal)
+        2    0.000    0.000    0.000    0.000 codeop.py:140(__call__)
+        2    0.000    0.000    0.000    0.000 base_events.py:671(call_later)
+       17    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:1017(_handle_fromlist)
+        8    0.000    0.000    0.000    0.000 gen.py:551(maybe_future)
+        2    0.000    0.000    0.000    0.000 queue.py:121(put)
+        3    0.000    0.000    0.000    0.000 adapter.py:368(adapt)
+        6    0.000    0.000    0.000    0.000 _parser.py:1012(_find_hms_idx)
+        1    0.000    0.000    0.000    0.000 common.py:43(validate_tol)
+       35    0.000    0.000    0.000    0.000 queue.py:208(_qsize)
+        3    0.000    0.000    0.000    0.000 _parser.py:239(__len__)
+       10    0.000    0.000    0.000    0.000 session.py:742(<listcomp>)
+        5    0.000    0.000    0.000    0.000 threading.py:341(notify)
+        3    0.000    0.000    0.000    0.000 _parser.py:227(__init__)
+        1    0.000    0.000    0.000    0.000 {built-in method _warnings.warn}
+        9    0.000    0.000    0.000    0.000 traitlets.py:2950(validate)
+        1    0.000    0.000    0.000    0.000 frontendcomm.py:233(_remote_callback)
+        3    0.000    0.000    0.000    0.000 session.py:861(_add_digest)
+        1    0.000    0.000    0.000    0.000 cloudpickle_fast.py:59(dumps)
+       22    0.000    0.000    0.000    0.000 session.py:223(extract_header)
+       61    0.000    0.000    0.000    0.000 {method '__getitem__' of 'dict' objects}
+       15    0.000    0.000    0.000    0.000 __init__.py:1412(debug)
+        8    0.000    0.000    0.000    0.000 selector_events.py:584(_process_events)
+        3    0.000    0.000    0.000    0.000 {built-in method builtins.sum}
+        1    0.000    0.000    0.000    0.000 compilerop.py:96(ast_parse)
+        2    0.000    0.000    0.000    0.000 base_events.py:693(call_at)
+       28    0.000    0.000    0.000    0.000 <string>:1(__new__)
+        3    0.000    0.000    0.000    0.000 builtin_trap.py:39(__enter__)
+       13    0.000    0.000    0.000    0.000 {method 'digest' of '_hashlib.HASH' objects}
+        3    0.000    0.000    0.000    0.000 _parser.py:1223(_build_naive)
+       42    0.000    0.000    0.000    0.000 _parser.py:209(isword)
+        3    0.000    0.000    0.000    0.000 _parser.py:62(__init__)
+       20    0.000    0.000    0.000    0.000 {built-in method _codecs.charmap_encode}
+        2    0.000    0.000    0.000    0.000 splitinput.py:110(__init__)
+        1    0.000    0.000    0.000    0.000 compilerop.py:134(cache)
+        8    0.000    0.000    0.000    0.000 ioloop.py:241(current)
+        2    0.000    0.000    0.000    0.000 guisupport.py:112(get_app_qt4)
+        3    0.000    0.000    0.000    0.000 queues.py:317(__put_internal)
+        1    0.000    0.000    0.000    0.000 base.py:115(__init__)
+       24    0.000    0.000    0.000    0.000 types.py:171(__get__)
+       14    0.000    0.000    0.000    0.000 {method 'hexdigest' of '_hashlib.HASH' objects}
+        3    0.000    0.000    0.000    0.000 _parser.py:480(resolve_ymd)
+        1    0.000    0.000    0.000    0.000 threading.py:519(set)
+        2    0.000    0.000    0.000    0.000 warnings.py:165(simplefilter)
+       12    0.000    0.000    0.000    0.000 signal.py:35(_enum_to_int)
+       13    0.000    0.000    0.000    0.000 threading.py:246(__enter__)
+        3    0.000    0.000    0.000    0.000 builtin_trap.py:72(activate)
+       84    0.000    0.000    0.000    0.000 {method 'read' of '_io.StringIO' objects}
+        6    0.000    0.000    0.000    0.000 _parser.py:1062(_could_be_tzname)
+       22    0.000    0.000    0.000    0.000 concurrent.py:52(is_future)
+        1    0.000    0.000    0.000    0.000 base_events.py:1766(_add_callback)
+        3    0.000    0.000    0.000    0.000 session.py:824(feed_identities)
+        3    0.000    0.000    0.000    0.000 builtin_trap.py:46(__exit__)
+        2    0.000    0.000    0.000    0.000 {built-in method quit}
+       14    0.000    0.000    0.000    0.000 weakref.py:382(__getitem__)
+        2    0.000    0.000    0.000    0.000 splitinput.py:53(split_user_input)
+       39    0.000    0.000    0.000    0.000 _parser.py:240(<genexpr>)
+       13    0.000    0.000    0.000    0.000 threading.py:249(__exit__)
+        9    0.000    0.000    0.000    0.000 _parser.py:342(hms)
+       41    0.000    0.000    0.000    0.000 {built-in method __new__ of type object at 0x00007FFDA2E5B810}
+        3    0.000    0.000    0.000    0.000 _parser.py:1183(_build_tzaware)
+       12    0.000    0.000    0.000    0.000 base_events.py:662(time)
+        3    0.000    0.000    0.000    0.000 queues.py:256(get_nowait)
+        1    0.000    0.000    0.000    0.000 pyplot.py:136(post_execute)
+        1    0.000    0.000    0.000    0.000 commbase.py:350(_remote_callback)
+       12    0.000    0.000    0.000    0.000 inputtransformer2.py:106(_find_assign_op)
+        2    0.000    0.000    0.000    0.000 warnings.py:181(_add_filter)
+        7    0.000    0.000    0.000    0.000 py3compat.py:188(iteritems)
+        1    0.000    0.000    0.000    0.000 compilerop.py:115(get_code_name)
+        3    0.000    0.000    0.000    0.000 builtin_trap.py:79(deactivate)
+        3    0.000    0.000    0.000    0.000 inputtransformer2.py:214(find)
+        1    0.000    0.000    0.000    0.000 ipkernel.py:177(_forward_input)
+        1    0.000    0.000    0.000    0.000 compilerop.py:54(code_name)
+       11    0.000    0.000    0.000    0.000 {method 'format' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 threading.py:364(notify_all)
+        1    0.000    0.000    0.000    0.000 payload.py:54(clear_payload)
+        3    0.000    0.000    0.000    0.000 _parser.py:1139(_parsems)
+      105    0.000    0.000    0.000    0.000 {method 'isdigit' of 'str' objects}
+       38    0.000    0.000    0.000    0.000 base_events.py:1877(get_debug)
+        8    0.000    0.000    0.000    0.000 threading.py:258(_acquire_restore)
+       13    0.000    0.000    0.000    0.000 threading.py:261(_is_owned)
+        2    0.000    0.000    0.000    0.000 events.py:104(__init__)
+       21    0.000    0.000    0.000    0.000 {method 'replace' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 kernel.py:492(get_cwd)
+        1    0.000    0.000    0.000    0.000 base.py:4(check_arguments)
+        2    0.000    0.000    0.000    0.000 prefilter.py:458(check)
+      102    0.000    0.000    0.000    0.000 {method 'extend' of 'list' objects}
+        9    0.000    0.000    0.000    0.000 _parser.py:335(month)
+       24    0.000    0.000    0.000    0.000 jsonutil.py:31(_ensure_tzinfo)
+       10    0.000    0.000    0.000    0.000 {built-in method builtins.locals}
+       15    0.000    0.000    0.000    0.000 __init__.py:1677(isEnabledFor)
+        6    0.000    0.000    0.000    0.000 queues.py:322(_consume_expired)
+       36    0.000    0.000    0.000    0.000 {built-in method builtins.setattr}
+        6    0.000    0.000    0.000    0.000 ioloop.py:663(add_future)
+       11    0.000    0.000    0.000    0.000 {built-in method utcnow}
+        3    0.000    0.000    0.000    0.000 enum.py:611(_missing_)
+        1    0.000    0.000    0.000    0.000 {method 'any' of 'numpy.generic' objects}
+        3    0.000    0.000    0.000    0.000 inputtransformer2.py:369(find)
+        6    0.000    0.000    0.000    0.000 inputtransformer2.py:79(__call__)
+        2    0.000    0.000    0.000    0.000 {built-in method start}
+        9    0.000    0.000    0.000    0.000 builtin_trap.py:53(add_builtin)
+        3    0.000    0.000    0.000    0.000 _parser.py:401(__init__)
+        1    0.000    0.000    0.000    0.000 ipkernel.py:150(init_metadata)
+       23    0.000    0.000    0.000    0.000 {method 'pop' of 'list' objects}
+       24    0.000    0.000    0.000    0.000 base_events.py:506(_check_closed)
+        1    0.000    0.000    0.000    0.000 cloudpickle_fast.py:561(dump)
+        2    0.000    0.000    0.000    0.000 warnings.py:458(__enter__)
+       12    0.000    0.000    0.000    0.000 traitlets.py:1841(validate)
+        2    0.000    0.000    0.000    0.000 zmqstream.py:205(on_send)
+        3    0.000    0.000    0.000    0.000 inputtransformer2.py:246(find)
+        1    0.000    0.000    0.000    0.000 {built-in method nt.getcwd}
+        1    0.000    0.000    0.000    0.000 {built-in method numpy.arange}
+        3    0.000    0.000    0.000    0.000 <frozen importlib._bootstrap>:389(parent)
+       19    0.000    0.000    0.000    0.000 {built-in method _contextvars.copy_context}
+        3    0.000    0.000    0.000    0.000 {built-in method builtins.all}
+        3    0.000    0.000    0.000    0.000 kernelbase.py:211(should_handle)
+        3    0.000    0.000    0.000    0.000 queues.py:377(_put)
+        4    0.000    0.000    0.000    0.000 ioloop.py:532(time)
+        3    0.000    0.000    0.000    0.000 {built-in method now}
+       12    0.000    0.000    0.000    0.000 zmqstream.py:513(_check_closed)
+        1    0.000    0.000    0.000    0.000 commbase.py:399(on_incoming_call)
+        2    0.000    0.000    0.000    0.000 contextlib.py:238(helper)
+        2    0.000    0.000    0.000    0.000 {built-in method setEnabled}
+        6    0.000    0.000    0.000    0.000 _parser.py:328(weekday)
+        1    0.000    0.000    0.000    0.000 _methods.py:53(_any)
+       12    0.000    0.000    0.000    0.000 _parser.py:219(isspace)
+        6    0.000    0.000    0.000    0.000 iostream.py:313(set_parent)
+        6    0.000    0.000    0.000    0.000 {built-in method _signal.signal}
+       16    0.000    0.000    0.000    0.000 {method 'startswith' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 traitlets.py:2493(validate)
+        3    0.000    0.000    0.000    0.000 _parser.py:1105(_parse_min_sec)
+        6    0.000    0.000    0.000    0.000 _parser.py:348(ampm)
+        8    0.000    0.000    0.000    0.000 threading.py:255(_release_save)
+        1    0.000    0.000    0.000    0.000 cloudpickle_fast.py:595(__init__)
+       30    0.000    0.000    0.000    0.000 {method 'popleft' of 'collections.deque' objects}
+        3    0.000    0.000    0.000    0.000 inputtransformer2.py:21(leading_empty_lines)
+        5    0.000    0.000    0.000    0.000 queues.py:173(qsize)
+        3    0.000    0.000    0.000    0.000 _parser.py:386(validate)
+        7    0.000    0.000    0.000    0.000 {method 'update' of 'dict' objects}
+        2    0.000    0.000    0.000    0.000 {instance}
+       42    0.000    0.000    0.000    0.000 {method 'isalpha' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 os.py:740(encodekey)
+        2    0.000    0.000    0.000    0.000 interactiveshell.py:2414(find_magic)
+       19    0.000    0.000    0.000    0.000 {method 'upper' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 commbase.py:248(_set_pickle_protocol)
+        1    0.000    0.000    0.000    0.000 _pylab_helpers.py:130(draw_all)
+        2    0.000    0.000    0.000    0.000 contextlib.py:82(__init__)
+       24    0.000    0.000    0.000    0.000 enum.py:664(value)
+        3    0.000    0.000    0.000    0.000 inputtransformer2.py:34(leading_indent)
+        2    0.000    0.000    0.000    0.000 abc.py:100(__subclasscheck__)
+       13    0.000    0.000    0.000    0.000 zmqstream.py:421(receiving)
+        6    0.000    0.000    0.000    0.000 _parser.py:325(jump)
+        9    0.000    0.000    0.000    0.000 {method 'release' of '_thread.lock' objects}
+        7    0.000    0.000    0.000    0.000 {built-in method builtins.next}
+        9    0.000    0.000    0.000    0.000 traitlets.py:2957(validate_elements)
+        2    0.000    0.000    0.000    0.000 queue.py:216(_get)
+        1    0.000    0.000    0.000    0.000 numerictypes.py:360(issubdtype)
+        1    0.000    0.000    0.000    0.000 __init__.py:1207(is_interactive)
+       13    0.000    0.000    0.000    0.000 {method '__enter__' of '_thread.lock' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method setQuitOnLastWindowClosed}
+       31    0.000    0.000    0.000    0.000 {method 'done' of '_asyncio.Future' objects}
+       10    0.000    0.000    0.000    0.000 {method 'split' of 'str' objects}
+       24    0.000    0.000    0.000    0.000 {method 'span' of 're.Match' objects}
+        2    0.000    0.000    0.000    0.000 {method 'remove' of 'list' objects}
+        1    0.000    0.000    0.000    0.000 kernelbase.py:498(init_metadata)
+        3    0.000    0.000    0.000    0.000 _parser.py:360(tzoffset)
+        2    0.000    0.000    0.000    0.000 prefilter.py:414(check)
+        2    0.000    0.000    0.000    0.000 contextlib.py:117(__exit__)
+        6    0.000    0.000    0.000    0.000 _parser.py:1067(<genexpr>)
+        1    0.000    0.000    0.000    0.000 {built-in method _pickle.loads}
+       12    0.000    0.000    0.000    0.000 {method 'decode' of 'bytes' objects}
+        2    0.000    0.000    0.000    0.000 contextlib.py:108(__enter__)
+        1    0.000    0.000    0.000    0.000 {built-in method _hashlib.openssl_sha1}
+        1    0.000    0.000    0.000    0.000 _pylab_helpers.py:96(get_all_fig_managers)
+        2    0.000    0.000    0.000    0.000 prefilter.py:482(check)
+        1    0.000    0.000    0.000    0.000 manager.py:58(get_comm)
+        9    0.000    0.000    0.000    0.000 gen.py:131(_value_from_stopiteration)
+        1    0.000    0.000    0.000    0.000 {function CloudPickler.dump at 0x000001C275EA3160}
+        6    0.000    0.000    0.000    0.000 {method 'count' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 ipkernel.py:195(_restore_input)
+        8    0.000    0.000    0.000    0.000 {method 'splitlines' of 'str' objects}
+       10    0.000    0.000    0.000    0.000 tz.py:74(utcoffset)
+        9    0.000    0.000    0.000    0.000 builtin_trap.py:65(remove_builtin)
+        1    0.000    0.000    0.000    0.000 interactiveshell.py:1544(push)
+       20    0.000    0.000    0.000    0.000 {method 'isidentifier' of 'str' objects}
+        2    0.000    0.000    0.000    0.000 ipkernel.py:205(execution_count)
+        4    0.000    0.000    0.000    0.000 os.py:734(check_str)
+        1    0.000    0.000    0.000    0.000 displayhook.py:252(__call__)
+        3    0.000    0.000    0.000    0.000 queues.py:380(_get)
+        1    0.000    0.000    0.000    0.000 display_trap.py:48(__enter__)
+        8    0.000    0.000    0.000    0.000 {built-in method _imp.lock_held}
+        1    0.000    0.000    0.000    0.000 __init__.py:686(__getitem__)
+       12    0.000    0.000    0.000    0.000 {built-in method time.monotonic}
+        2    0.000    0.000    0.000    0.000 warnings.py:477(__exit__)
+       24    0.000    0.000    0.000    0.000 {method 'end' of 're.Match' objects}
+        3    0.000    0.000    0.000    0.000 inputtransformer2.py:429(find)
+       10    0.000    0.000    0.000    0.000 {method 'copy' of 'dict' objects}
+        2    0.000    0.000    0.000    0.000 warnings.py:437(__init__)
+        2    0.000    0.000    0.000    0.000 prefilter.py:426(check)
+        2    0.000    0.000    0.000    0.000 numerictypes.py:286(issubclass_)
+        8    0.000    0.000    0.000    0.000 {built-in method _asyncio.get_event_loop}
+       14    0.000    0.000    0.000    0.000 {method 'result' of '_asyncio.Future' objects}
+        2    0.000    0.000    0.000    0.000 {built-in method _abc._abc_subclasscheck}
+       14    0.000    0.000    0.000    0.000 typing.py:1149(cast)
+       11    0.000    0.000    0.000    0.000 {built-in method builtins.iter}
+       16    0.000    0.000    0.000    0.000 {method 'isspace' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 traitlets.py:2634(validate_elements)
+        3    0.000    0.000    0.000    0.000 inputtransformer2.py:94(cell_magic)
+        4    0.000    0.000    0.000    0.000 {method 'endswith' of 'str' objects}
+        4    0.000    0.000    0.000    0.000 tokenize.py:612(generate_tokens)
+        2    0.000    0.000    0.000    0.000 prefilter.py:264(transform_line)
+        4    0.000    0.000    0.000    0.000 prefilter.py:234(get_handler_by_name)
+       12    0.000    0.000    0.000    0.000 {method 'cancelled' of '_asyncio.Future' objects}
+        5    0.000    0.000    0.000    0.000 {built-in method _heapq.heappop}
+       13    0.000    0.000    0.000    0.000 {method '__exit__' of '_thread.lock' objects}
+        8    0.000    0.000    0.000    0.000 {built-in method _thread.get_ident}
+        2    0.000    0.000    0.000    0.000 traitlets.py:2251(validate)
+        3    0.000    0.000    0.000    0.000 session.py:940(<listcomp>)
+        1    0.000    0.000    0.000    0.000 <ipython-input-117-123440cb1158>:1(<module>)
+        4    0.000    0.000    0.000    0.000 compilerop.py:166(extra_flags)
+        2    0.000    0.000    0.000    0.000 frontendcomm.py:250(__init__)
+        1    0.000    0.000    0.000    0.000 display_trap.py:61(set)
+        2    0.000    0.000    0.000    0.000 queue.py:212(_put)
+        2    0.000    0.000    0.000    0.000 hooks.py:103(__call__)
+        3    0.000    0.000    0.000    0.000 _parser.py:488(<dictcomp>)
+        5    0.000    0.000    0.000    0.000 {built-in method _heapq.heappush}
+        1    0.000    0.000    0.000    0.000 interactiveshell.py:234(softspace)
+        1    0.000    0.000    0.000    0.000 interactiveshell.py:2669(user_expressions)
+        1    0.000    0.000    0.000    0.000 interactiveshell.py:3214(transform_ast)
+       10    0.000    0.000    0.000    0.000 {method 'strip' of 'str' objects}
+        9    0.000    0.000    0.000    0.000 {method 'is_finite' of 'decimal.Decimal' objects}
+        1    0.000    0.000    0.000    0.000 traitlets.py:2038(validate)
+        3    0.000    0.000    0.000    0.000 session.py:859(<listcomp>)
+        5    0.000    0.000    0.000    0.000 {built-in method time.time}
+        1    0.000    0.000    0.000    0.000 history.py:741(store_output)
+        8    0.000    0.000    0.000    0.000 gen.py:251(<lambda>)
+        3    0.000    0.000    0.000    0.000 locks.py:228(clear)
+        1    0.000    0.000    0.000    0.000 ivp.py:28(prepare_events)
+        1    0.000    0.000    0.000    0.000 display_trap.py:54(__exit__)
+        2    0.000    0.000    0.000    0.000 encoding.py:21(get_stream_enc)
+        3    0.000    0.000    0.000    0.000 queues.py:177(empty)
+        3    0.000    0.000    0.000    0.000 {method 'rpartition' of 'str' objects}
+        1    0.000    0.000    0.000    0.000 logger.py:167(log)
+        3    0.000    0.000    0.000    0.000 {built-in method _operator._compare_digest}
+        4    0.000    0.000    0.000    0.000 interactiveshell.py:1278(user_global_ns)
+        3    0.000    0.000    0.000    0.000 zmqstream.py:309(_finish_flush)
+        3    0.000    0.000    0.000    0.000 _parser.py:366(convertyear)
+        4    0.000    0.000    0.000    0.000 traitlets.py:2175(validate)
+        1    0.000    0.000    0.000    0.000 interactiveshell.py:1078(_clear_warning_registry)
+        1    0.000    0.000    0.000    0.000 displayhook.py:70(check_for_underscore)
+        3    0.000    0.000    0.000    0.000 {method 'ljust' of 'str' objects}
+        6    0.000    0.000    0.000    0.000 {built-in method builtins.callable}
+        1    0.000    0.000    0.000    0.000 payload.py:51(read_payload)
+        2    0.000    0.000    0.000    0.000 interactiveshell.py:3334(compare)
+        2    0.000    0.000    0.000    0.000 py3compat.py:26(cast_unicode)
+        2    0.000    0.000    0.000    0.000 {method 'insert' of 'list' objects}
+        3    0.000    0.000    0.000    0.000 {method 'add' of 'set' objects}
+        4    0.000    0.000    0.000    0.000 {method 'rstrip' of 'str' objects}
+        6    0.000    0.000    0.000    0.000 {built-in method _warnings._filters_mutated}
+        2    0.000    0.000    0.000    0.000 {built-in method setSingleShot}
+        2    0.000    0.000    0.000    0.000 prefilter.py:440(check)
+        3    0.000    0.000    0.000    0.000 _parser.py:408(has_year)
+        2    0.000    0.000    0.000    0.000 zmqstream.py:278(<lambda>)
+        1    0.000    0.000    0.000    0.000 {method 'update' of 'set' objects}
+        1    0.000    0.000    0.000    0.000 {built-in method numpy.empty}
+        3    0.000    0.000    0.000    0.000 kernelbase.py:408(<lambda>)
+        2    0.000    0.000    0.000    0.000 ipstruct.py:125(__getattr__)
+        1    0.000    0.000    0.000    0.000 interactiveshell.py:294(__init__)
+        3    0.000    0.000    0.000    0.000 queues.py:59(_set_timeout)
+        1    0.000    0.000    0.000    0.000 commbase.py:160(get_comm_id_list)
+        2    0.000    0.000    0.000    0.000 {method 'groups' of 're.Match' objects}
+        1    0.000    0.000    0.000    0.000 selectors.py:275(_key_from_fd)
+        1    0.000    0.000    0.000    0.000 ipkernel.py:164(finish_metadata)
+        2    0.000    0.000    0.000    0.000 prefilter.py:147(transformers)
+        2    0.000    0.000    0.000    0.000 prefilter.py:183(checkers)
+        1    0.000    0.000    0.000    0.000 commbase.py:176(is_open)
+        2    0.000    0.000    0.000    0.000 prefilter.py:549(handle)
+        3    0.000    0.000    0.000    0.000 {method 'clear' of 'dict' objects}
+        1    0.000    0.000    0.000    0.000 traitlets.py:2002(_validate_bounds)
+        1    0.000    0.000    0.000    0.000 inputtransformer2.py:673(<setcomp>)
+        3    0.000    0.000    0.000    0.000 _parser.py:192(__iter__)
+        1    0.000    0.000    0.000    0.000 interactiveshell.py:322(success)
+        2    0.000    0.000    0.000    0.000 zmqstream.py:48(stack_context_wrap)
+        1    0.000    0.000    0.000    0.000 display_trap.py:67(unset)
+        1    0.000    0.000    0.000    0.000 compilerop.py:159(<listcomp>)
+        1    0.000    0.000    0.000    0.000 logger.py:187(log_write)
+        1    0.000    0.000    0.000    0.000 {method 'getvalue' of '_io.BytesIO' objects}
+        1    0.000    0.000    0.000    0.000 traitlets.py:2504(validate_elements)
+        1    0.000    0.000    0.000
