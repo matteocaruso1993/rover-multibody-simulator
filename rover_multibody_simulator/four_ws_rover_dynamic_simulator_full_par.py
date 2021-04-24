@@ -3001,7 +3001,7 @@ class RoverSimulator:
             
         
         #Save current config file since it may be different
-        with open(os.os.path.join(path_to_save, 'config.ini'), 'w') as configfile:
+        with open(os.path.join(path_to_save, 'config.ini'), 'w') as configfile:
             self.config.write(configfile)
             
             
