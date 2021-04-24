@@ -8,5 +8,6 @@ numpy==1.19.2
 cloudpickle==1.6.0
 jsons==1.4.0
 importlib==1.0.4
+numba==0.51.2
 geneticalgorithm==1.0.2
-Cython==0.29.23
+Cython==0.29.22
