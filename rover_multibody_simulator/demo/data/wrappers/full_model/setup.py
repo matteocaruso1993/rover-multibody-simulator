@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 try:
     from setuptools import setup
     from setuptools import Extension
@@ -18,24 +17,3 @@ ext_mods = [Extension(
     extra_link_args=[]
 )]
 setup(ext_modules=cythonize(ext_mods, **cy_opts))
-=======
-try:
-    from setuptools import setup
-    from setuptools import Extension
-except ImportError:
-    from distutils.core import setup
-    from distutils.extension import Extension
-from Cython.Build import cythonize
-cy_opts = {}
-import numpy as np
-
-ext_mods = [Extension(
-    'wrapper_module_141', ['wrapper_module_141.pyx', 'wrapped_code_141.c'],
-    include_dirs=[np.get_include()],
-    library_dirs=[],
-    libraries=[],
-    extra_compile_args=['-std=c99'],
-    extra_link_args=[]
-)]
-setup(ext_modules=cythonize(ext_mods, **cy_opts))
->>>>>>> b6d4c17251816852f4d7e9bf65d38a15bd77234e
