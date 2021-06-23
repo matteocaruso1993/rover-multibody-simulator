@@ -2027,7 +2027,7 @@ class RoverSimulator:
         
         
         
-    def simulate(self, time_step = None, sim_time = None):
+    def simulate(self, time_step = None, sim_time = None, out = True):
         """
         This method is used to simulate the dynamics of the rover. It uses the
         Euler first order integration scheme
@@ -2083,7 +2083,8 @@ class RoverSimulator:
             self.current_gen_coord = x[:len(self.gen_coord)]
             self.current_gen_speed = x[len(self.gen_coord):]
             if self.wheel_controller._current_control_time + self.wheel_controller._sampling_period <= t:
-                print(t)
+                if out:
+                    print(t)
                 idx = self.wheel_controller.getWheelIndexes()
                 steer = self.current_gen_coord[idx['steer']]
                 drive = self.current_gen_speed[idx['drive']]
@@ -2113,6 +2114,7 @@ class RoverSimulator:
                 _, F = self.__checkWheelContact2(*in_contact_check)
                 
                 
+                
                 right_vector[len(self.gen_coord):] = F
                 forcing_full += right_vector #np.vstack((F_zero, F))
                 
@@ -2125,8 +2127,8 @@ class RoverSimulator:
             
             return dy_dt
         
-        
-        print('Solving ODE')
+        if out:
+            print('Solving ODE')
         if integrator == 'odeint':
             
             stiff_order = self.config.get('Simulator','max stiff order')
@@ -2153,7 +2155,7 @@ class RoverSimulator:
             
             
             self.ode_sol = odeint(right_hand_side,np.hstack((self.current_gen_coord, self.current_gen_speed)),\
-                                  time_sim, tfirst = True, full_output = 1)#, mxords=stiff_order, mxordn=non_stiff_order, hmin=min_time_step)
+                                  time_sim, tfirst = True, full_output = True, mxstep=5000)#, mxords=stiff_order, mxordn=non_stiff_order, hmin=min_time_step)
             
         elif integrator == 'Euler-Explicit':
             for t in tqdm(time_sim, desc='Solving ODEs with Euler-Explicit Scheme'):
