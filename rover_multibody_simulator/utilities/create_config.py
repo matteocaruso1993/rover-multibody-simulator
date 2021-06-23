@@ -8,6 +8,9 @@ Created on Sat Mar 20 22:24:08 2021
 import configparser
 import math
 import os
+import json
+
+
 
 config = configparser.ConfigParser()
 
@@ -15,11 +18,12 @@ config.add_section('Model Description')
 
 
 kg_mm2kg_m = 1e-6
+leg_scale_mass = 1.0304335182393098
 
 
 
 #ROVER BODY PROPERTIES
-config['Model Description']['rover_mass'] = '0.92'
+config['Model Description']['rover_mass'] = '1.267' #'0.92'
 config['Model Description']['rover_inertia_xx'] = str(56118.91*kg_mm2kg_m)
 config['Model Description']['rover_inertia_yy'] = str(4372.79*kg_mm2kg_m)
 config['Model Description']['rover_inertia_zz'] = str(8383.09*kg_mm2kg_m)
@@ -44,7 +48,7 @@ config['Model Description']['hinge1_len'] = str(float(config['Model Description'
                                                 *math.cos(float(config['Model Description']['link_angle']))) #TO CHECK!
 config['Model Description']['hinge1_height'] = str(float(config['Model Description']['link_lenght'])\
                                                 *math.sin(float(config['Model Description']['link_angle']))) #TO CHECK!
-config['Model Description']['swing_arm_mass'] = '0.168615'
+config['Model Description']['swing_arm_mass'] = str(leg_scale_mass*0.168615)
 config['Model Description']['swing_arm_inertia_xx'] = str(92.454*kg_mm2kg_m)
 config['Model Description']['swing_arm_inertia_yy'] = str(740.29055*kg_mm2kg_m)
 config['Model Description']['swing_arm_inertia_zz'] = str(690.80801*kg_mm2kg_m)
@@ -58,7 +62,7 @@ config['Model Description']['central_link_cm_dist_x'] = '0.0'
 config['Model Description']['central_link_cm_dist_y'] = '0.050808'  #'0.048808'
 config['Model Description']['central_link_cm_dist_z'] = '0.009641'
 config['Model Description']['central_link_lenght'] = str(.1)#str(0.09139+0.004)
-config['Model Description']['central_link_mass'] = '0.0766'
+config['Model Description']['central_link_mass'] = str(leg_scale_mass*0.0766)
 config['Model Description']['central_link_inertia_xx'] = str(39.7567*kg_mm2kg_m)
 config['Model Description']['central_link_inertia_yy'] = str(83.8321*kg_mm2kg_m)
 config['Model Description']['central_link_inertia_zz'] = str(58.4776*kg_mm2kg_m)
@@ -72,7 +76,7 @@ config['Model Description']['terminal_link_cm_dist_x'] = '0.06471'
 config['Model Description']['terminal_link_cm_dist_y'] = '0.1413'
 config['Model Description']['terminal_link_cm_dist_z'] = '-0.01137'
 config['Model Description']['terminal_link_lenght'] = str(0.16739+0.002)  #'0.16639'
-config['Model Description']['terminal_link_mass'] = '0.38157'
+config['Model Description']['terminal_link_mass'] = str(leg_scale_mass*0.38157)
 config['Model Description']['terminal_link_inertia_xx'] = str(39.7567*kg_mm2kg_m)
 config['Model Description']['terminal_link_inertia_yy'] = str(83.8321*kg_mm2kg_m)
 config['Model Description']['terminal_link_inertia_zz'] = str(58.4776*kg_mm2kg_m)
@@ -93,13 +97,13 @@ config['Model Description']['terminal_link_inertia_yz'] = str(-3.11E-02*kg_mm2kg
 config['Model Description']['wheel_offset_x'] = '0.10577'
 config['Model Description']['wheel_offset_y'] = '0.16639'
 config['Model Description']['wheel_offset_z'] = '-0.02713'
-config['Model Description']['wheel_mass'] = '0.2242'
+config['Model Description']['wheel_mass'] = str(leg_scale_mass*0.2242)
 config['Model Description']['wheel_inertia_xx'] = str(1108.7749*kg_mm2kg_m)
 config['Model Description']['wheel_inertia_yy'] = str(675.2718*kg_mm2kg_m)
 config['Model Description']['wheel_inertia_zz'] = str(675.2718*kg_mm2kg_m)
 config['Model Description']['wheel_radius'] = str(.085+0.005791804035500003) #'.0943709' #'.085'
 
-config['Model Description']['simplified'] = 'False'
+config['Model Description']['simplified'] = 'True'
 config['Model Description']['debugging'] = 'False'
 config['Model Description']['action-reaction'] = 'True'
 config['Model Description']['initial symbols substitution'] = 'False'
@@ -108,50 +112,50 @@ config['Model Description']['wheel-torque-control-debug'] = 'False'
 
 #TORSIONAL SPRINGS PROPERTIES
 config.add_section('Springs Definition')
-config['Springs Definition']['k_fr1'] = '10.5'
-config['Springs Definition']['M0_fr1'] = '1'
+config['Springs Definition']['k_fr1'] = '9.1875' #10.5
+config['Springs Definition']['M0_fr1'] = '2.1384'# '1'
 config['Springs Definition']['E_fr1'] = '1.5'
 config['Springs Definition']['f_fr1'] = '133'
 config['Springs Definition']['c_fr1'] = '5e-3'
 
-config['Springs Definition']['k_fr2'] = '10.5'
-config['Springs Definition']['M0_fr2'] = '1'
+config['Springs Definition']['k_fr2'] = '9.1875'
+config['Springs Definition']['M0_fr2'] = '1.4842'
 config['Springs Definition']['E_fr2'] = '1.5'
 config['Springs Definition']['f_fr2'] = '133'
 config['Springs Definition']['c_fr2'] = '5e-3'
 
-config['Springs Definition']['k_br1'] = '10.5'
-config['Springs Definition']['M0_br1'] = '1'
+config['Springs Definition']['k_br1'] = '9.1875'
+config['Springs Definition']['M0_br1'] = '2.2756'
 config['Springs Definition']['E_br1'] = '1.5'
 config['Springs Definition']['f_br1'] = '133'
 config['Springs Definition']['c_br1'] = '5e-3'
 
-config['Springs Definition']['k_br2'] = '10.5'
-config['Springs Definition']['M0_br2'] = '1'
+config['Springs Definition']['k_br2'] = '9.1875'
+config['Springs Definition']['M0_br2'] = '1.2415'
 config['Springs Definition']['E_br2'] = '1.5'
 config['Springs Definition']['f_br2'] = '133'
 config['Springs Definition']['c_br2'] = '5e-3'
 
-config['Springs Definition']['k_fl1'] = '10.5'
-config['Springs Definition']['M0_fl1'] = '1'
+config['Springs Definition']['k_fl1'] = '9.1875'
+config['Springs Definition']['M0_fl1'] = '2.329'
 config['Springs Definition']['E_fl1'] = '1.5'
 config['Springs Definition']['f_fl1'] = '133'
 config['Springs Definition']['c_fl1'] = '5e-3'
 
-config['Springs Definition']['k_fl2'] = '10.5'
-config['Springs Definition']['M0_fl2'] = '1'
+config['Springs Definition']['k_fl2'] = '9.1875'
+config['Springs Definition']['M0_fl2'] = '1.3572'
 config['Springs Definition']['E_fl2'] = '1.5'
 config['Springs Definition']['f_fl2'] = '133'
 config['Springs Definition']['c_fl2'] = '5e-3'
 
-config['Springs Definition']['k_bl1'] = '10.5'
-config['Springs Definition']['M0_bl1'] = '1'
+config['Springs Definition']['k_bl1'] = '9.1875'
+config['Springs Definition']['M0_bl1'] = '1.9174'
 config['Springs Definition']['E_bl1'] = '1.5'
 config['Springs Definition']['f_bl1'] = '133'
 config['Springs Definition']['c_bl1'] = '5e-3'
 
-config['Springs Definition']['k_bl2'] = '10.5'
-config['Springs Definition']['M0_bl2'] = '1'
+config['Springs Definition']['k_bl2'] = '9.1875'
+config['Springs Definition']['M0_bl2'] = '1.6447'
 config['Springs Definition']['E_bl2'] = '1.5'
 config['Springs Definition']['f_bl2'] = '133'
 config['Springs Definition']['c_bl2'] = '5e-3'
