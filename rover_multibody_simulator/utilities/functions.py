@@ -6,6 +6,9 @@ Created on Thu Mar 25 10:36:38 2021
 """
 import numpy as np
 from numba import jit
+import sobol
+import os
+import pandas as pd
 
 @jit(nopython=True)
 def step5(x, x_0, y_0, x_max, y_max):
@@ -112,3 +115,122 @@ def clip(v, min_v, max_v):
     else:
         pass
     return v
+
+
+def generateDOE(in_dict, n_points = 100, method='random'):
+    cols = len(list(in_dict.keys()))
+    
+    out = np.zeros((n_points,cols), dtype=float)
+    
+    for n, key in enumerate(in_dict.keys()):
+        out[:,n] = in_dict[key]['default']
+    
+    mask = [in_dict[key]['variable'] for key in in_dict.keys()]
+    col_idx = np.where(mask)[0]
+    #print(col_idx)
+    dims = col_idx.shape[0]
+    
+    if method == 'sobol':
+        out_1 = sobol.sample(dims, n_points)
+    elif method == 'random':
+        out_1 = np.random.rand(n_points,dims)
+    else:
+        raise ValueError('Invalid Method')
+        
+    
+    out[:,col_idx] = out_1
+        
+        
+    counter=0
+    for key in in_dict.keys():
+        if in_dict[key]['variable']:
+            in_dict[key]['values'] = in_dict[key]['min'] + out[:,counter]*(in_dict[key]['max'] - in_dict[key]['min'])
+        else:
+            in_dict[key]['values'] = out[:,counter]
+        counter+=1
+        
+    return in_dict
+
+
+def saveVars(filename, var_list):
+    with open(filename, 'a') as f:
+        string_to_write = ', '.join(map(str,var_list))
+        f.write('\n' + string_to_write)
+        
+    f.close()
+    
+    
+def saveSimulationData(sim, destination_folder):
+    soluzione = sim.ode_sol
+    out = np.vstack((soluzione['t'],soluzione['y']))
+    header = ['t']
+    for c in sim.gen_coord:
+        header.append(c.name)
+            
+    for c in sim.gen_speeds:
+        header.append(c.name)
+            
+    my_string = ','.join(map(str,header))
+        
+    num = 0
+    while True:
+        filename = os.path.join(destination_folder,'sim_py_v' + str(num) + '_transpose_con_header.csv')
+        if os.path.exists(filename):
+            num += 1
+        else:
+            break
+                    
+        
+    np.savetxt(filename, out.T, delimiter=',', header=my_string)
+    
+    return os.path.split(filename)
+
+
+def saveConfig(sim, destination_filename):
+    with open(destination_filename,'w') as f:
+        sim.config.write(f)
+        
+    f.close()
+    
+    
+    
+    
+
+def loadExperimentalData(path_to_folder, sim_type, pin_id):
+    if sim_type == 'dead':
+        prefix = 'DD_'
+    elif sim_type == 'skew':
+        prefix = 'SD_'
+    else:
+        raise ValueError('Invalid sim type')
+        
+    valid_pin_id = [1,2,3,4]
+    if pin_id not in valid_pin_id:
+        raise ValueError('Invalid pin ID')
+        
+    filename_x = os.path.join(path_to_folder, prefix + str(pin_id) + '_X.csv')
+    filename_y = os.path.join(path_to_folder, prefix + str(pin_id) + '_X.csv')     
+    data_x = pd.read_csv(filename_x, skiprows=[0,1])
+    data_y = pd.read_csv(filename_y, skiprows=[0,1])
+    
+    out = {'Pin ' +str(pin_id): {'x': data_x, 'y': data_y}}
+    
+    return out
+
+
+def loadAllExperimentData(path_to_folder, sim_type):
+    pin_id = [1,2,3,4]
+    data_full = dict()
+    
+    for ID in pin_id:
+        data = loadExperimentalData(path_to_folder=path_to_folder, sim_type=sim_type, pin_id=ID)
+        data_full = {**data_full, **data}
+    
+    return data_full
+
+
+    
+    
+
+    
+    
