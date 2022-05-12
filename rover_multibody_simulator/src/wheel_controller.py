@@ -172,17 +172,18 @@ class RoverWheelControl:
             self._last_error[:self._n_wheels] = err_steer
             
             for i, val in enumerate(correction_steer):
-                correction_steer[i] = clip(val)
+                correction_steer[i] = clip(val,-np.float('inf'), np.float('inf'))
                 
             
             
         if self._drive_target is not None:
             #Compute correction
+            """
             err_drive = in_drive - self._drive_target
             
             
             #Proportional
-            correction_drive = -np.dot(self._drive_gain, err_drive)
+            correction_drive = -np.dot(self._drive_gain, err_drive) #OK!
             
             #Derivative
             err_der_drive = (-self._last_error[self._n_wheels:] + err_drive)/self._sampling_period
@@ -194,8 +195,27 @@ class RoverWheelControl:
             self._last_error[self._n_wheels:] = err_drive
             
             for i, val in enumerate(correction_drive):
-                correction_drive[i] = clip(val)
-        
+                correction_drive[i] = clip(val,-np.float('inf'), np.float('inf'))"""
+            
+            err_drive = -in_drive + self._drive_target
+            
+            #Proportional
+            correction_drive = np.dot(self._drive_gain, err_drive) #OK!
+            
+            #Derivative
+            err_der_drive = (-self._last_error[self._n_wheels:] + err_drive)/self._sampling_period
+            correction_drive += np.dot(self._drive_d_gain, err_der_drive)
+            
+            
+            #Integral term
+            self._integrator_term[self._n_wheels:] += err_drive*self._sampling_period
+            correction_drive += np.dot(self._drive_i_gain, self._integrator_term[self._n_wheels:])
+            self._last_error[self._n_wheels:] = err_drive
+            
+            for i, val in enumerate(correction_drive):
+                correction_drive[i] = clip(val,-np.float('inf'), np.float('inf'))
+            
+            
         out = np.hstack((correction_steer, correction_drive))
         
         

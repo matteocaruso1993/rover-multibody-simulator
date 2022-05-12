@@ -29,6 +29,8 @@ def main():
     sim.setInitialConditions(gen_coord, len(gen_coord)*[0])
     current_wheel_height = sim.getLowestWheelPoint()[1]
     gen_coord[2] = args.drop_height - current_wheel_height
+    print('The rover centre of mass current height is: \t {:10.6f} [m]'.format(gen_coord[2]))
+    input('Press Enter to start the simulation')
     sim.setInitialConditions(gen_coord, len(gen_coord)*[0])
     sim.simulate(args.sim_step_time, args.sim_time)
     
@@ -37,6 +39,6 @@ def main():
     
 
 if __name__ == '__main__':
-    print(sys.path)
+    #print(sys.path)
     main()
 

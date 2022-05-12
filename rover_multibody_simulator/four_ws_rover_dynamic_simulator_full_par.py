@@ -157,7 +157,7 @@ class RoverSimulator:
     
             
     
-    def loadConfig(self):
+    def loadConfig(self, output = True):
         
         config = configparser.ConfigParser()
         if not config.read(self.config_path):
@@ -166,7 +166,8 @@ class RoverSimulator:
         else:
             self.__config_found = True
             self.config = config
-            print('Config file successfully loaded')
+            if output:
+                print('Config file successfully loaded')
         
 
     def initialize(self):
@@ -1306,7 +1307,13 @@ class RoverSimulator:
         #self.__ground_interpolator = interpolate.SmoothBivariateSpline(ground_pts[:,0],
         #                                                               ground_pts[:,1],ground_pts[:,2])
         
-        self.__ground_interpolator = interpolate.RectBivariateSpline(Y[:,0],X[0,:], Z)
+        k_x = self.config.getint('Ground Interpolator','kx')
+        k_y = self.config.getint('Ground Interpolator','ky')
+        s_ = self.config.getfloat('Ground Interpolator','s')
+        
+        
+        
+        self.__ground_interpolator = interpolate.RectBivariateSpline(Y[:,0],X[0,:], Z,kx=k_x, ky=k_y, s=s_)
         
         steer_torques = list(symbols('TS_:4')) #Steer torque
         drive_torques = list(symbols('TD_:4')) #Drive torque
@@ -1346,6 +1353,13 @@ class RoverSimulator:
         
         
         self._initWheelControl()
+        
+        try:
+            self.setConstantSpeed()
+        except:
+            self.setInitialConditions(len(self.gen_coord)*[0], len(self.gen_coord)*[0])
+            self.setConstantSpeed()
+                
             
                     
         
@@ -1857,14 +1871,14 @@ class RoverSimulator:
         
         
         
-        
+        rover_pos = self.lambdified_points[1](*np.hstack((q,par)))
         self.__ax = self.__fig.add_subplot(111,projection='3d')
         self.__ax.set_xlabel('x [m]')
         self.__ax.set_ylabel('y [m]')
         self.__ax.set_zlabel('z [m]')
-        self.__ax.set_ylim(-2,2)
-        self.__ax.set_xlim(-2,2)
-        self.__ax.set_zlim(-2,2)
+        self.__ax.set_ylim(rover_pos[0,1]-1,rover_pos[0,1]+1)
+        self.__ax.set_xlim(rover_pos[0,0]-1,rover_pos[0,0]+1)
+        self.__ax.set_zlim(0,2)
         self.__ax.set_title('Rover initial configuration')
         self.__ax.view_init(lat, long)
         self.__ax.dist = 7
@@ -1937,13 +1951,29 @@ class RoverSimulator:
             
             for n, point in enumerate(self.points):
                 if point.name in centre_names:
-                    pts_to_plot = np.vstack((pts_to_plot,self.lambdified_points[n](*np.hstack((q+par)))))
+                    pts_to_plot = np.vstack((pts_to_plot,self.lambdified_points[n](*np.hstack((q,par)))))
             
             
             self.__ax.scatter(pts_to_plot[:,0], pts_to_plot[:,1], pts_to_plot[:,2], c='k')
             
             if ani_intialized:
                 return True
+        
+        
+        if self.__ground_interpolator:
+            rover_pos = self.lambdified_points[1](*np.hstack((q,par)))
+            x = np.linspace(rover_pos[0,0]-1, rover_pos[0,0]+1,1000)
+            y = np.linspace(rover_pos[0,1]-1, rover_pos[0,1]+1,1000)
+            X,Y = np.meshgrid(x,y)
+            Z = np.zeros(X.shape)
+            
+            for i in range(X.shape[0]):
+                for j in range(Y.shape[1]):
+                    Z[i,j] = self.__ground_interpolator(Y[i,j],X[i,j],grid=False)
+                    
+            
+            self.__ax.plot_surface(X,Y,Z,cmap='plasma')
+            
         
         
         
@@ -2027,7 +2057,7 @@ class RoverSimulator:
         
         
         
-    def simulate(self, time_step = None, sim_time = None):
+    def simulate(self, time_step = None, sim_time = None, out = True):
         """
         This method is used to simulate the dynamics of the rover. It uses the
         Euler first order integration scheme
@@ -2073,17 +2103,22 @@ class RoverSimulator:
         
         right_vector = np.zeros((len(self.gen_coord) + len(self.gen_speeds), 1))
         
+        rtol_ = self.config.getfloat('Simulator','rtol')
+        atol_ = self.config.getfloat('Simulator','atol')
+        
         
 
         def right_hand_side(t, x):
             
-            
+            #print(t)
             
             
             self.current_gen_coord = x[:len(self.gen_coord)]
             self.current_gen_speed = x[len(self.gen_coord):]
             if self.wheel_controller._current_control_time + self.wheel_controller._sampling_period <= t:
-                print(t)
+                if out:
+                    print(t)
+                    pass
                 idx = self.wheel_controller.getWheelIndexes()
                 steer = self.current_gen_coord[idx['steer']]
                 drive = self.current_gen_speed[idx['drive']]
@@ -2091,7 +2126,7 @@ class RoverSimulator:
             
             #Updating control torques
                 corr = self.wheel_controller.computeTorqueCorrection(np.hstack((steer, drive)))
-                
+                #print(corr)
                 self.setSteerTorques(*corr[:4])
                 self.setDrivingTorque(*corr[4:])
             
@@ -2099,6 +2134,9 @@ class RoverSimulator:
             self.__gen_coord_history.append(self.current_gen_coord.tolist())
             self.__gen_speed_history.append(self.current_gen_speed.tolist())
             self.__time_history.append(t)
+            
+            
+            
             
             if self.method == 'Kane':
                 
@@ -2113,6 +2151,7 @@ class RoverSimulator:
                 _, F = self.__checkWheelContact2(*in_contact_check)
                 
                 
+                
                 right_vector[len(self.gen_coord):] = F
                 forcing_full += right_vector #np.vstack((F_zero, F))
                 
@@ -2122,11 +2161,14 @@ class RoverSimulator:
                 
                 dy_dt = sol.T.squeeze()
                 
+                if self.constant_input['idx']:
+                    dy_dt[np.array(self.constant_input['idx'])] = self.constant_input['value']
+                    dy_dt[np.array(self.constant_input['idx']) + len(self.gen_coord)] = 0
             
             return dy_dt
         
-        
-        print('Solving ODE')
+        if out:
+            print('Solving ODE')
         if integrator == 'odeint':
             
             stiff_order = self.config.get('Simulator','max stiff order')
@@ -2153,7 +2195,7 @@ class RoverSimulator:
             
             
             self.ode_sol = odeint(right_hand_side,np.hstack((self.current_gen_coord, self.current_gen_speed)),\
-                                  time_sim, tfirst = True, full_output = 1)#, mxords=stiff_order, mxordn=non_stiff_order, hmin=min_time_step)
+                                  time_sim, tfirst = True, full_output = True, mxstep=5000, min_step=0.001)#, mxords=stiff_order, mxordn=non_stiff_order, hmin=min_time_step)
             
         elif integrator == 'Euler-Explicit':
             for t in tqdm(time_sim, desc='Solving ODEs with Euler-Explicit Scheme'):
@@ -2171,7 +2213,7 @@ class RoverSimulator:
             
         else:
             self.ode_sol = solve_ivp(right_hand_side, [time_sim[0], time_sim[-1]],\
-                                     np.hstack((self.current_gen_coord, self.current_gen_speed)), method = integrator.split('ipv - ')[1], rtol=1e-5, t_eval=time_sim)
+                                     np.hstack((self.current_gen_coord, self.current_gen_speed)), method = integrator.split('ipv - ')[1], t_eval=time_sim, rtol=rtol_, atol=atol_, max_step = self.wheel_controller._sampling_period)
         
             
             
@@ -2314,9 +2356,10 @@ class RoverSimulator:
                         
                         v_norm = math.sqrt(v_f[0]**2 + v_f[1]**2) #Vector norm
                         
-                        mu = self.friction.computeFrictionCoeffiecient(v_norm)
+                        mu = self.friction.computeFrictionCoeffiecient(v_norm/1)
                         
-                        F_friction = -mu*(F_k_wheel[-1][0])# + F_d_wheel[0,-1]) #Modulus
+                        #print(F_d_wheel)
+                        F_friction = -mu*(F_k_wheel[-1][0] + F_d_wheel[0][-1]) #Modulus
                         #F_friction = -mu*10
                         F_fr_vec = [[F_friction*v_f[0]/v_norm],[F_friction*v_f[1]/v_norm], [0]] #np.hstack((F_friction*v_f/v_norm, [0]))
                         #print(F_fr_vec)
@@ -2764,7 +2807,64 @@ class RoverSimulator:
                 
         
         
+    def saveCurrentPoseasInitialConditions(self, name, zero_yaw = False):
+        state = self.getCurrentState()
+        if self.config.getboolean('Model Description','simplified'):
+            folder = 'simple'
+        else:
+            folder = 'full'
         
+        path = os.path.dirname(__file__)
+        if not os.path.exists(os.path.join(path,'data','state', folder)):
+            os.makedirs(os.path.join(path,'data','state', folder))
+        
+        data = dict()
+        data['Initial Position'] = dict()
+        data['Initial Speed'] = dict()
+        
+        
+        for n, var in enumerate(self.gen_coord):
+            data['Initial Position'][var.name] = state[n,0]
+            data['Initial Speed'][self.gen_speeds[n].name] = state[n,1]
+            
+            if var.name == 'theta' and zero_yaw:
+                data['Initial Position'][var.name] = 0
+                data['Initial Speed'][self.gen_speeds[n].name] = 0
+        
+        with open(os.path.join(path,'data','state', folder,name+'.json'),'w') as f:
+            json.dump(data, f)
+            
+            
+    def loadInitialConditions(self, name, folder, subs_vel=False, debug = False):
+        
+        path = os.path.dirname(__file__)
+        if not os.path.exists(os.path.join(path, 'data','state',folder, name+'.json')):
+            raise ValueError('File not found!')
+        
+        with open(os.path.join(path, 'data','state', folder, name+'.json'), 'r') as f:
+            data = json.load(f)
+        
+        
+        q = len(self.gen_coord)*[0]
+        q_d = len(self.gen_speeds)*[0]
+        
+        for n, coord in enumerate(self.gen_coord):
+            if coord.name in list(data['Initial Position'].keys()):
+                q[n] = data['Initial Position'][coord.name]
+                tmp = list(data['Initial Position'].keys())
+                j = tmp.index(coord.name)
+                tmp1 = list(data['Initial Speed'].keys())
+                if subs_vel:
+                    q_d[n] = data['Initial Speed'][tmp1[j]]
+                
+                
+
+        self.setInitialConditions(q, q_d)
+        
+        if debug:
+            print(q)
+            print(q_d)
+            
         
 
     def exportToMatlabFunctions(self):
@@ -2790,8 +2890,12 @@ class RoverSimulator:
         Y = ground_pts[:,1].reshape((data['rows'], data['columns']))
         Z = ground_pts[:,2].reshape((data['rows'], data['columns']))
         
+        k_x = self.config.getint('Ground Interpolator','kx')
+        k_y = self.config.getint('Ground Interpolator','ky')
+        s_ = self.config.getfloat('Ground Interpolator','s')
         
-        self.__ground_interpolator = interpolate.RectBivariateSpline(Y[:,0], X[0,:], Z)
+        
+        self.__ground_interpolator = interpolate.RectBivariateSpline(Y[:,0], X[0,:], Z, kx=k_x,ky=k_y,s=s_)
         
     def showTerrain(self, samples = 1000):
         x_min = self.__ground_new[:,0].min()
@@ -2914,7 +3018,7 @@ class RoverSimulator:
         
         
     def _initWheelControl(self):
-        self.wheel_controller = RoverWheelControl(controller_frequency=100)
+        self.wheel_controller = RoverWheelControl(controller_frequency=self.config.getfloat('Controller','frequency'))
         if self.__config_found:
             steer_gains = 4*[0]
             drive_gains = 4*[0]
@@ -3367,6 +3471,20 @@ class RoverSimulator:
         result = cls.__new__(cls)
         result.__dict__.update(self.__dict__)
         return result
+    
+    
+    def setConstantSpeed(self, index_list = list(), speed_list = None):
+        self.constant_input = dict()
+        self.constant_input['idx'] = index_list
+        self.constant_input['value'] = speed_list
+        
+        q = self.current_gen_coord
+        q_d = self.current_gen_speed
+        q_d[index_list] = speed_list
+        
+        self.setInitialConditions(q, q_d)
+        
+        
     
     # def __deepcopy__(self, memo):
     #     cls = self.__class__

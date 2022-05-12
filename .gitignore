@@ -6,6 +6,8 @@ __pycache__/
 # C extensions
 *.so
 
+**/.vs/
+
 # Distribution / packaging
 .Python
 build/
@@ -132,3 +134,6 @@ dmypy.json
 Data/
 file.log
 __pycache__/
+
+**/demo/*.ini
+**/demo/*.csv

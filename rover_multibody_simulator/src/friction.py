@@ -62,8 +62,8 @@ class Friction:
         fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.plot(v,mu)
-        ax.set_xlabel('v [m/s]')
-        ax.set_ylabel('\mu ')
+        ax.set_xlabel('$v [m/s]$')
+        ax.set_ylabel('$\mu$')
         plt.show()
         
     def getVeltoFrictionMapping(self, vel_in):
@@ -117,7 +117,7 @@ class Friction:
         
         
         #model = differential_evolution(optimFunction, bounds, tol=1e-6, maxiter=10000, popsize=100)
-        model = dual_annealing(optimFunction, bounds, maxiter=10000, x0 = np.ones(4,) )
+        model = dual_annealing(optimFunction, bounds, maxiter=20000, x0 = np.ones(4,) )
         algorithm_param = {'max_num_iteration': 1000,\
                    'population_size':100,\
                    'mutation_probability':0.1,\
