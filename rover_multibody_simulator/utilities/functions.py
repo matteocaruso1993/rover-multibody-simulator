@@ -233,12 +233,4 @@ def loadAllExperimentData(path_to_folder, sim_type):
 
 def computeEnergyLike(in_array):
     return np.sum(in_array**2)
-
-
-
-
-    
-    
-
-    
     

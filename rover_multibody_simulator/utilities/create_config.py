@@ -277,6 +277,3 @@ with open(os.path.join(parent_folder, 'data','config','config.ini'), 'w') as con
 if copy_to_model:
     with open(os.path.join(parent_folder, 'data','model',model,'config.ini'), 'w') as configfile:
         config.write(configfile)
-
-
-
